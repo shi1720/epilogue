@@ -124,6 +124,7 @@ def test_durable_lock_prevents_overlapping_workers(webapp):
     first = server.STATE
     other = server.AppState()
     first.acquire('working')
+    assert other.metadata()['status'] == 'working'
     with pytest.raises(HTTPException) as exc:
         other.acquire('working')
     assert exc.value.status_code == 409

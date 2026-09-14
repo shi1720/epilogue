@@ -117,7 +117,7 @@ class AppState:
         operation = row.get("operation", {})
         status = self.status
         error = self.error or row.get("last_error")
-        if hosted() and operation:
+        if operation:
             if operation.get("expires", 0) > time.time():
                 status = operation["status"]
             else:
