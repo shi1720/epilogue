@@ -38,9 +38,9 @@
 
 > **SAY:** "One click, and Epilogue goes to work — live, right now, on Amazon Bedrock. The Archivist reads every document and inventories fourteen accounts and obligations, with evidence for each. The Planner turns them into a complete plan using institutional playbooks — domain knowledge that knows the traps: gyms only accept written letters; the month-of-death benefit must go back. And without being asked, day one's letters are already going out — the bank, the card, and deceased alerts at all three credit bureaus, because day one is when thieves strike."
 
-**[SCREEN: dashboard loads. Pause on the hero: "Nothing needs you right now, Sarah."]**
+**[SCREEN: dashboard loads. Pause on the hero line — either "Nothing needs you right now, Sarah" or "One thing needs you…" depending on the run.]**
 
-> **SAY:** "And this is the product. Not a chat window. A single sentence: nothing needs you right now. Everything else — sixteen matters — is handled."
+> **SAY:** "And this is the product. Not a chat window. One sentence at the top of Sarah's whole world: everything is handled — except, at most, the one or two things that genuinely need her. Sixteen matters, and this is all she has to see."
 
 **[SCREEN: click "+3 days" on the case clock. Mail arrives in the feed; work happens.]**
 

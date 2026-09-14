@@ -42,7 +42,8 @@ Sanity check before recording: `epilogue demo`, open the dashboard, click **Use 
 
 ## 6. Optional polish (if time remains)
 
-- [ ] Deploy to AgentCore (`docs` + `deploy/agentcore/`) and mention the live deployment in the Devpost text — it strengthens Technical Implementation.
+- [ ] **Live demo link** (projects with one score higher): the fastest path is AWS App Runner straight from the Dockerfile — push the image to ECR (`docker build -f deploy/Dockerfile -t epilogue . && aws ecr …`), create an App Runner service (0.25 vCPU is plenty), set the AWS credentials/region env vars, and paste the service URL into Devpost. Your $50 AWS credits cover this for weeks. (Add HTTP basic auth or note it's a shared demo — one case at a time.)
+- [ ] Deploy to AgentCore (`deploy/agentcore/`) and mention the live deployment in the Devpost text — it strengthens Technical Implementation.
 - [ ] Add the demo video as a link at the top of the README.
 
 ## Deadline
