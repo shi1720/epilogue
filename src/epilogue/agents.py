@@ -24,11 +24,15 @@ models the rest of the system consumes programmatically.
 
 from __future__ import annotations
 
+import json
+import uuid
+
 from strands import Agent
 from strands.agent.conversation_manager import SlidingWindowConversationManager
 
 from .audit import AuditHook
 from .domain import AccountInventory, IntakeProfile, TaskItem, TaskPlan, TriageResult
+from .planning import complete_plan
 from .playbooks import PLAYBOOKS, render_playbook
 from .runtime import Runtime
 from .simworld import INSTITUTIONS
@@ -293,17 +297,30 @@ def run_planner(model, rt: Runtime, profile: IntakeProfile, inventory: AccountIn
         ),
         callback_handler=None,
     )
-    plan = planner(
-        f"""Survivor profile:\n{profile.model_dump_json(indent=2)}\n
-Account inventory:\n{inventory.model_dump_json(indent=2)}\n
-Known institutions (use these ids):\n{known_institutions}\n
-Playbooks:\n{playbook_digest}\n
-Produce the complete matter plan.""",
-        structured_output_model=TaskPlan,
-    ).structured_output
+    saved_plan = rt.ledger.kv_get("intake_plan")
+    if saved_plan:
+        plan = TaskPlan.model_validate_json(saved_plan)
+    else:
+        plan = planner(
+            f"""Survivor profile:\n{profile.model_dump_json(indent=2)}\n
+    Account inventory:\n{inventory.model_dump_json(indent=2)}\n
+    Known institutions (use these ids):\n{known_institutions}\n
+    Playbooks:\n{playbook_digest}\n
+    Produce the complete matter plan.""",
+            structured_output_model=TaskPlan,
+        ).structured_output
+        source = json.loads(rt.ledger.kv_get("intake_request", "{}"))
+        plan = complete_plan(plan, inventory, source.get("documents", ""))
+        rt.ledger.kv_set("intake_plan", plan.model_dump_json())
     tasks: list[TaskItem] = []
-    for planned in plan.tasks:
+    for index, planned in enumerate(plan.tasks):
+        task_id = "task_" + uuid.uuid5(uuid.NAMESPACE_URL, f"{rt.case.id}:plan:{index}").hex[:12]
+        existing = rt.ledger.get_task(task_id)
+        if existing:
+            tasks.append(existing)
+            continue
         task = TaskItem(
+            id=task_id,
             case_id=rt.case.id,
             title=planned.title,
             category=planned.category,

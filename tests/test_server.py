@@ -23,6 +23,7 @@ from epilogue.domain import (
     IntakeProfile,
     PlannedTask,
     TaskPlan,
+    TaskStatus,
     TriageResult,
 )
 from epilogue.engine import Vigil
@@ -115,8 +116,12 @@ def test_full_case_through_the_web_app(webapp):
     assert res.status_code == 200
     state = _wait_idle(client)
     tasks = state["tasks"]
-    assert len(tasks) == 1
-    task_id = tasks[0]["id"]
+    assert len(tasks) == 15  # every named account plus standard protection matters
+    task_id = next(t["id"] for t in tasks if t["institution_id"] == "first_harbor_bank")
+    for extra in server.STATE.ledger.tasks_for_case(state["case"]["id"]):
+        if extra.id != task_id:
+            extra.status = TaskStatus.DISMISSED
+            server.STATE.ledger.save_task(extra)
 
     # Cycle 2: the Steward makes first contact.
     model.turns.extend(
@@ -136,7 +141,7 @@ def test_full_case_through_the_web_app(webapp):
     )
     assert client.post("/api/clock/advance", json={"days": 1}).status_code == 200
     state = _wait_idle(client)
-    assert state["tasks"][0]["status"] == "waiting_response"
+    assert next(t for t in state["tasks"] if t["id"] == task_id)["status"] == "waiting_response"
     assert any(e["kind"] == "letter_sent" for e in state["timeline"])
 
     # Days pass; the bank wants documents; the Steward sends a certified copy.
@@ -163,7 +168,7 @@ def test_full_case_through_the_web_app(webapp):
     # The bank confirms; the matter settles without another model call.
     assert client.post("/api/clock/advance", json={"days": 4}).status_code == 200
     state = _wait_idle(client)
-    assert state["tasks"][0]["status"] == "done"
+    assert next(t for t in state["tasks"] if t["id"] == task_id)["status"] == "done"
     assert state["stats"]["settled"] == 1
     assert client.get("/api/mail").json()["mail"]  # correspondence is on file
 

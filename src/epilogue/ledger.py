@@ -16,6 +16,7 @@ from __future__ import annotations
 import sqlite3
 import threading
 from collections.abc import Callable
+from contextlib import contextmanager
 from datetime import date, datetime, timedelta, timezone
 from pathlib import Path
 
@@ -52,7 +53,8 @@ class Ledger:
     audit event as it lands.
     """
 
-    def __init__(self, path: str | Path = "data/epilogue.db") -> None:
+    def __init__(self, path: str | Path = "data/epilogue.db", records=None) -> None:
+        self.records = records
         self.path = Path(path)
         if str(self.path) != ":memory:":
             self.path.parent.mkdir(parents=True, exist_ok=True)
@@ -63,6 +65,15 @@ class Ledger:
             self._conn.executescript(_SCHEMA)
             self._conn.commit()
         self._listeners: list[Callable[[AuditEvent], None]] = []
+        if records:
+            for entry in records.all():
+                table, row = entry["table"], entry["row"]
+                if table not in ("cases", "tasks", "decisions", "audit", "mail", "kv"):
+                    raise ValueError("Unexpected ledger table")
+                names = ",".join(row)
+                placeholders = ",".join("?" for _ in row)
+                self._conn.execute(f"INSERT OR REPLACE INTO {table} ({names}) VALUES ({placeholders})", tuple(row.values()))
+            self._conn.commit()
 
     # -- event bus ---------------------------------------------------------
 
@@ -83,6 +94,8 @@ class Ledger:
         placeholders = ",".join("?" for _ in cols)
         names = ",".join(cols)
         with self._lock:
+            if self.records:
+                self.records.put(table, row_id, cols)
             self._conn.execute(
                 f"INSERT OR REPLACE INTO {table} ({names}) VALUES ({placeholders})", tuple(cols.values())
             )
@@ -91,6 +104,12 @@ class Ledger:
     def _rows(self, sql: str, args: tuple = ()) -> list[str]:
         with self._lock:
             return [r[0] for r in self._conn.execute(sql, args).fetchall()]
+
+    @contextmanager
+    def atomic(self):
+        """Serialize compound changes inside the account's leased worker."""
+        with self._lock:
+            yield
 
     # -- sim clock ---------------------------------------------------------
 
@@ -103,11 +122,7 @@ class Ledger:
         return today
 
     def set_sim_today(self, day: date) -> None:
-        with self._lock:
-            self._conn.execute(
-                "INSERT OR REPLACE INTO kv (key, value) VALUES (?, ?)", ("sim_today", day.isoformat())
-            )
-            self._conn.commit()
+        self.kv_set("sim_today", day.isoformat())
 
     def advance_days(self, days: int = 1) -> date:
         new_day = self.sim_today() + timedelta(days=days)
@@ -122,6 +137,8 @@ class Ledger:
 
     def kv_set(self, key: str, value: str) -> None:
         with self._lock:
+            if self.records:
+                self.records.put("kv", key, {"key": key, "value": value})
             self._conn.execute("INSERT OR REPLACE INTO kv (key, value) VALUES (?, ?)", (key, value))
             self._conn.commit()
 
@@ -318,6 +335,8 @@ class Ledger:
         }
 
     def reset(self) -> None:
+        if self.records:
+            raise RuntimeError("Create a new ledger generation to reset a hosted case.")
         with self._lock:
             for table in ("cases", "tasks", "decisions", "audit", "mail", "kv"):
                 self._conn.execute(f"DELETE FROM {table}")

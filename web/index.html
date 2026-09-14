@@ -1,116 +1,86 @@
 <!doctype html>
 <html lang="en">
 <head>
-<meta charset="utf-8">
-<meta name="viewport" content="width=device-width, initial-scale=1">
-<title>Epilogue</title>
-<link rel="preconnect" href="https://fonts.googleapis.com">
-<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,400;9..144,500;9..144,600&family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="/static/style.css">
-<link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🕊️</text></svg>">
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="theme-color" content="#243f35">
+  <meta name="description" content="A little less to carry. Epilogue turns the administration after a loss into a thoughtful, transparent plan. Try the live agent in a private demo workspace.">
+  <title>Epilogue — A little less to carry</title>
+  <link rel="icon" href="/static/favicon.svg" type="image/svg+xml">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&family=Fraunces:opsz,wght@9..144,400;9..144,500;9..144,600&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="/static/style.css">
 </head>
 <body>
-
-<!-- ================= INTAKE ================= -->
-<section id="intake-view" hidden>
-  <div class="intake-wrap">
-    <div class="wordmark big">Epilogue</div>
-    <p class="tagline">The agent that settles what's left behind.</p>
-    <div class="intake-card">
-      <h1>We're so sorry.<br>Let us carry what we can.</h1>
-      <p class="intake-lead">
-        Tell us what happened, in your own words. Then share whatever papers you have —
-        statements, mail, notes. Epilogue will read everything, find every account and
-        obligation, and quietly begin. It will only come back to you when something truly
-        needs your voice.
-      </p>
-      <label class="field-label">In your own words</label>
-      <textarea id="narrative" rows="7" placeholder="My father passed away on…"></textarea>
-      <label class="field-label">The shoebox — statements, mail, notes (paste anything)</label>
-      <textarea id="documents" rows="9" placeholder="Paste bank statements, mail, notes…"></textarea>
-      <div class="intake-actions">
-        <button id="seed-btn" class="ghost">Use the demo case</button>
-        <button id="begin-btn" class="primary">Begin</button>
+<a class="skip-link" href="#main">Skip to content</a>
+<header class="site-header">
+  <a class="brand" href="/" aria-label="Epilogue home"><span class="brand-symbol" aria-hidden="true">e</span><span class="wordmark">epilogue<span>.</span></span></a>
+  <span class="header-note">A little less to carry.</span>
+  <div class="header-actions"><span class="demo-tag">LIVE AGENT DEMO</span><button id="account-btn" class="secondary" disabled>Connecting…</button></div>
+</header>
+<div id="notice" class="notice" role="status" hidden></div>
+<div id="error-banner" class="error-banner" role="alert" hidden><div><strong id="error-title">Let's try that again.</strong><p id="error-message"></p></div><button id="retry-btn" class="secondary">Continue</button><button id="dismiss-error" class="icon-btn" aria-label="Dismiss error">×</button></div>
+<main id="main">
+<section id="intake-view">
+  <div class="intake-layout">
+    <div class="welcome">
+      <p class="eyebrow"><span class="tiny-leaf" aria-hidden="true">✳</span> HERE FOR WHAT COMES NEXT</p>
+      <h1>Some things<br>shouldn't be<br>yours to carry.</h1>
+      <p class="welcome-lead">After a loss, the paperwork keeps coming.<br>Epilogue helps take care of it, one thoughtful step at a time.</p>
+      <div class="journey" aria-label="How Epilogue works">
+        <div><span>01</span><p><strong>Share what you have</strong>A story, a statement, a shoebox of notes.</p></div>
+        <div><span>02</span><p><strong>Let us find the next step</strong>A clear plan. Letters drafted. Follow-ups remembered.</p></div>
+        <div><span>03</span><p><strong>Stay close to what matters</strong>You decide what needs your voice. We carry the rest.</p></div>
       </div>
-      <p class="privacy-note">What you share stays in this case file, on this machine. Nothing is
-      ever sent anywhere except the correspondence you can read, to the institutions it concerns.</p>
+      <div class="welcome-footer"><span class="branch" aria-hidden="true">⌁</span><p>Thoughtful by design.<br><span>Every action leaves a record you can read.</span></p></div>
     </div>
-    <div id="intake-progress" class="intake-progress" hidden>
-      <div class="pulse-line"><span class="pulse-dot"></span><span id="intake-status">Epilogue is reading what you shared…</span></div>
-      <div id="intake-feed" class="intake-feed"></div>
+    <div class="intake-column">
+      <div class="intake-card">
+        <div class="card-kicker"><span class="eyebrow">YOUR FIRST STEP</span><span class="step-tag">01 / 03</span></div>
+        <h2>Start with what you know.</h2>
+        <p class="intake-lead">There's no perfect place to start. A few words are enough.</p>
+        <button id="seed-btn" class="demo-case" disabled><span class="demo-icon" aria-hidden="true">↗</span><span><strong>Try the Mitchell family demo</strong><small>A fictional case, ready to explore.</small></span><span aria-hidden="true">→</span></button>
+        <form id="intake-form" novalidate>
+          <label class="field-label" for="narrative">Tell us a little about them <span>Required</span></label>
+          <textarea id="narrative" rows="5" maxlength="12000" placeholder="My father passed away recently. I'm helping my mother sort through his accounts, and I'm not sure where to begin…" aria-describedby="narrative-error"></textarea>
+          <p class="field-error" id="narrative-error" hidden>Please share at least 10 characters so we have a little context.</p>
+          <label class="field-label" for="documents">The shoebox <span>Optional</span></label>
+          <textarea id="documents" rows="5" maxlength="80000" placeholder="Paste statements, mail, account details, or a list of things you're worried about…"></textarea>
+          <p class="input-hint">For this demo, please use fictional information.</p>
+          <button id="begin-btn" class="primary begin" type="submit" disabled>Let Epilogue begin <span aria-hidden="true">→</span></button>
+          <p id="allowance-note" class="allowance-note">$3 of agent testing included per account. No payment details.</p>
+        </form>
+        <p class="privacy-note"><span aria-hidden="true">◇</span> A real AI agent in a simulated world. Your inputs go to the model to build your case; all institution replies and outgoing letters are simulated. No real accounts are changed.</p>
+      </div>
+      <div id="intake-progress" class="intake-progress" aria-live="polite" hidden>
+        <div class="pulse-line"><span class="pulse-dot"></span><strong id="intake-status">Reading what you shared…</strong></div>
+        <p>You can leave this page open. Your progress is saved as we go.</p>
+        <div class="progress-steps"><span id="stage-read">01 · Read</span><span id="stage-plan">02 · Plan</span><span id="stage-work">03 · Begin</span></div>
+        <div id="intake-feed" class="intake-feed"></div>
+      </div>
     </div>
   </div>
 </section>
-
-<!-- ================= DASHBOARD ================= -->
 <section id="dashboard-view" hidden>
-  <header class="topbar">
-    <div class="wordmark">Epilogue</div>
-    <div class="case-line" id="case-line"></div>
-    <div class="topbar-right">
-      <span id="busy-dot" class="status-dot idle" title="Epilogue's status"></span>
-      <span id="sim-date" class="sim-date"></span>
-    </div>
-  </header>
-
-  <main class="layout">
+  <div class="workspace-bar"><div><p class="eyebrow">YOUR CASE FILE</p><p id="case-line"></p></div><div class="workspace-actions"><button id="export-btn" class="secondary">↓ Export case</button><button id="reset-btn" class="text-btn">New case</button></div></div>
+  <div class="layout">
     <div class="col-main">
-
-      <div class="hero">
-        <h1 id="hero-line"></h1>
-        <div class="stats-row" id="stats-row"></div>
-        <div class="progress-track"><div id="progress-fill" class="progress-fill"></div></div>
-      </div>
-
-      <section id="decisions-section" hidden>
-        <h2 class="section-title">Waiting on you</h2>
-        <p class="section-sub">Only what truly needs your voice. Everything else is being handled.</p>
-        <div id="decision-cards"></div>
-      </section>
-
-      <section id="note-section" hidden>
-        <h2 class="section-title">A note from Epilogue</h2>
-        <div class="weekly-note" id="weekly-note"></div>
-      </section>
-
-      <section>
-        <h2 class="section-title">Every matter, accounted for</h2>
-        <div id="matters"></div>
-      </section>
+      <section class="hero"><div class="hero-top"><span class="eyebrow">A LITTLE MORE ROOM TO BREATHE</span><span id="work-status" class="work-status"><span id="busy-dot" class="status-dot idle"></span><span id="work-label">On watch</span></span></div><h1 id="hero-line"></h1><div class="stats-row" id="stats-row"></div><div class="progress-track" role="progressbar" aria-label="Matters settled" aria-valuemin="0" aria-valuemax="100" id="case-progress"><div id="progress-fill" class="progress-fill"></div></div></section>
+      <section id="decisions-section" hidden><div class="section-heading"><h2>Room for your voice</h2><span class="section-number" id="decision-count"></span></div><p class="section-sub">A few things only you can decide. Take your time.</p><div id="decision-cards"></div></section>
+      <section id="note-section" hidden><h2 class="section-title">A note from Epilogue</h2><div class="weekly-note" id="weekly-note"></div></section>
+      <section><div class="section-heading"><h2>Every matter, accounted for</h2></div><div class="matter-toolbar"><input id="matter-search" type="search" placeholder="Find a matter…" aria-label="Search matters"><select id="matter-filter" aria-label="Filter matters"><option value="all">All matters</option><option value="active">In progress</option><option value="needs_decision">Needs you</option><option value="done">Settled</option></select></div><div id="matters"></div></section>
     </div>
-
     <aside class="col-side">
-      <section class="activity-panel">
-        <h3 class="side-title"><span id="activity-pulse" class="pulse-dot small" hidden></span> Right now</h3>
-        <div id="activity-feed" class="activity-feed"></div>
-      </section>
-      <section>
-        <h3 class="side-title">Handled quietly</h3>
-        <div id="timeline" class="timeline"></div>
-      </section>
+      <section class="clock-widget"><div class="clock-top"><span class="eyebrow">THE CASE CLOCK</span><span class="step-tag">SIMULATED</span></div><h2 id="sim-date"></h2><p>See what happens as replies arrive and follow-ups come due.</p><div class="clock-row"><button class="clock-btn" data-days="1">+1 day</button><button class="clock-btn" data-days="3">+3 days</button><button class="clock-btn" data-days="7">+1 week</button></div><button id="continue-btn" class="secondary full">Continue today's work</button><button id="pause-btn" class="text-btn full" hidden>Pause after this request</button><div class="budget-box"><div><span>Test allowance</span><strong id="budget-remaining">$3.00 left</strong></div><div class="budget-track"><div id="budget-fill"></div></div><small id="budget-detail">Included with your account</small></div></section>
+      <section class="activity-panel"><h2 class="side-title"><span id="activity-pulse" class="pulse-dot small" hidden></span>Right now</h2><div id="activity-feed" class="activity-feed" role="log" aria-live="off"></div></section>
+      <section class="timeline-section"><h2 class="side-title">The story so far</h2><div id="timeline" class="timeline"></div></section>
     </aside>
-  </main>
-
-  <div class="clock-widget">
-    <div class="clock-label">DEMO · the case clock</div>
-    <div class="clock-row">
-      <button class="clock-btn" data-days="1">+1 day</button>
-      <button class="clock-btn" data-days="3">+3 days</button>
-      <button class="clock-btn" data-days="7">+1 week</button>
-    </div>
-    <div class="clock-hint">Weeks of quiet work, compressed. In production this is a scheduler.</div>
   </div>
 </section>
-
-<!-- ================= MAIL MODAL ================= -->
-<div id="modal" class="modal" hidden>
-  <div class="modal-card">
-    <button class="modal-close" id="modal-close">×</button>
-    <div class="letter" id="modal-body"></div>
-  </div>
-</div>
-
-<script src="/static/app.js"></script>
+</main>
+<footer class="site-footer"><span class="wordmark">epilogue<span>.</span></span><p>Less administration. More space for being human.</p><button id="about-btn" class="text-btn">About this demo ↗</button></footer>
+<dialog id="modal" aria-labelledby="modal-title"><div class="modal-card"><button class="modal-close" id="modal-close" aria-label="Close dialog">×</button><p class="eyebrow" id="modal-kicker">EPILOGUE</p><h2 id="modal-title"></h2><div id="modal-body"></div><div id="modal-actions" class="modal-actions"></div></div></dialog>
+<script type="module" src="/static/app.js"></script>
 </body>
 </html>

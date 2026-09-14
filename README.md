@@ -11,6 +11,10 @@
 [![Python 3.10+](https://img.shields.io/badge/python-3.10%2B-b07d2e.svg)](pyproject.toml)
 [![Built with Strands](https://img.shields.io/badge/built%20with-Strands%20Agents-26251e.svg)](https://strandsagents.com)
 
+[**Try the live demo → epilogue-agent.web.app**](https://epilogue-agent.web.app/)
+
+Google sign-in · private saved cases · $3 of OpenAI testing per account · fictional institutions
+
 <img src="docs/media/live-day12.png" alt="The Epilogue dashboard, captured from a live agent run: six things need Sarah; everything else is handled." width="850">
 
 *Captured from a **live end-to-end run**: the real agent read the documents, planned 14 matters (and opened 3 more it discovered itself), escalated to certified documents when the bank refused photocopies, blocked an identity-theft attempt with the bureau alerts it placed on day one, and settled 11 of 17 matters over 12 simulated days — surfacing only the questions above.*
@@ -67,7 +71,7 @@ Defense in depth like this is what it takes to hand an autonomous agent the affa
 
 ### Design decisions worth stealing
 
-- **Agents are stateless between cycles.** All memory lives in the SQLite task ledger — matter notes, correspondence, decisions, the case clock. Any Steward instance can pick up any case at any time; the context window is a scratchpad, never the system of record. That's what makes the system restartable, horizontally scalable, and auditable.
+- **Agents are stateless between cycles.** Memory lives in a per-account ledger: SQLite locally, Firestore records on the hosted demo. Matter notes, correspondence, decisions, intake checkpoints, and the case clock survive a hosted restart. A durable account lease prevents overlapping workers; the context window is a scratchpad, never the system of record.
 - **The audit trail is a Strands hook.** A `HookProvider` subscribes to `BeforeToolCallEvent`/`AfterToolCallEvent` and writes every tool invocation to the ledger — feeding both the dashboard's live activity stream (SSE) and a permanent "everything Epilogue did" record. Trust needs receipts.
 - **The world is deterministic; the agent is not.** Simulated institutions are scripted state machines (below), so every demo exercises the *agent's* judgment against honest, reproducible resistance.
 - **Time is a first-class citizen.** Estate settlement runs on a slow clock. The Vigil wakes on a cadence, delivers due mail, chases overdue follow-ups, and compresses "two weeks later" into a button press for the demo — in production, the same tick runs from a scheduler (EventBridge → AgentCore).
@@ -110,13 +114,13 @@ An agent in this domain touches real authority and real PII, so the boundaries a
 
 - **Authority.** Epilogue acts as a *preparer and correspondent* under the executor's direction — the legal actor is always the human personal representative, named on every letter. Wet-ink signatures, notarizations, and legal filings are never automated: they surface as prepared-for-you decisions. A per-letter **review mode** (every outbound letter waits for approval) is the planned default for cautious users; today the autonomy contract's `ask_first` level provides it per category. Epilogue prepares paperwork; it does not practice law.
 - **Review.** Everything is inspectable after the fact: the audit trail records every tool call, every letter is stored verbatim, and decisions carry the context the agent had when it asked.
-- **Data.** The demo stores only what you paste, locally in SQLite; the domain model deliberately holds masked identifiers (`ssn_last4`, `checking ...4417`), never full account or Social Security numbers. A production deployment moves the ledger to encrypted managed storage (S3/DynamoDB) with the same schema.
+- **Data.** Use fictional information in this demo. Inputs are sent to the configured model provider (OpenAI on the hosted site). Local runs store case records in SQLite; the hosted demo saves private per-account records and spending limits in a dedicated Firestore database. Google sign-in is verified server-side through an HttpOnly session cookie. The OpenAI key stays in Secret Manager and is never sent to the browser. Export your case from the dashboard before starting a replacement case; replacement does not refill your allowance.
 
 ## Tests
 
 ```bash
-pip install -e ".[dev]"
-pytest            # 29 tests, fully offline, < 2s
+pip install -e ".[dev,hosting]"
+pytest            # offline integration, reliability, isolation, and budget tests
 ```
 
 The suite drives the **real Strands event loop** with a deterministic `ScriptedModel` (a `strands.models.Model` implementation that replays scripted tool calls and structured outputs). It covers the ledger, the simulated institutions, the Decision Gate (blocked → ask → approved → allowed), vault depletion of certified death certificates, and a full matter lifecycle: intake → plan → first contact → document demand → certified copy → settled.
@@ -137,7 +141,9 @@ See [`deploy/agentcore/agentcore_app.py`](deploy/agentcore/agentcore_app.py).
 
 ### Or: a public demo URL in ~10 minutes
 
-Run [`./deploy.sh`](deploy.sh) — an interactive one-command deploy to **Google Cloud Run**, with an optional clean `https://<project>.web.app` URL via Firebase Hosting. The model key is kept server-side as a Cloud Run env var (never in the repo or client), and an access-code gate keeps a shared link from spending your credits. Details: [`docs/DEPLOY_FIREBASE.md`](docs/DEPLOY_FIREBASE.md); a plain [`Dockerfile`](Dockerfile) works on any container host.
+Run `PROJECT_ID=gen-lang-client-0444960702 SITE_ID=epilogue-agent ./deploy.sh` from authenticated Google Cloud Shell. The script deploys Cloud Run behind Firebase Hosting, uses Secret Manager for the OpenAI key, and stores private case records in the named `epilogue` Firestore database. Google sign-in replaces the shared access code. Each account receives a lifetime $3 API testing allowance, with a configurable $30 host-wide cap. Model requests reserve budget transactionally before starting; resets and new cases do not refill it. Details: [`docs/DEPLOY_FIREBASE.md`](docs/DEPLOY_FIREBASE.md).
+
+The current clean address is [epilogue-agent.web.app](https://epilogue-agent.web.app/). Firebase site IDs are globally unique; `epilogue` was unavailable. Cloud Run remains the backend—Firebase Hosting provides the clean public address. One always-on Cloud Run instance keeps background work running; hosting, compute, and Firestore charges are separate from the model allowance.
 
 ## What it costs to run
 

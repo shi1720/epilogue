@@ -97,3 +97,16 @@ def test_bank_rejects_photocopies_certified_only(ledger, case):
     ledger.advance_days(4)
     delivered = world.deliver_due(case.id)
     assert delivered and "date-of-death balance" in delivered[0].subject.lower()
+
+
+def test_telecom_final_bill_can_be_settled_without_endless_followups(ledger, case):
+    world = SimWorld(ledger)
+    _submit(world, case, 'phone', 'clearline_wireless')
+    assert world.get_stage('clearline_wireless', 'phone') == 'awaiting_payment'
+    _submit(world, case, 'phone', 'clearline_wireless', body='How do I pay the final bill?')
+    assert world.get_stage('clearline_wireless', 'phone') == 'awaiting_payment'
+    world.submit(case.id, 'phone', 'clearline_wireless', 'secure_message', 'Final payment',
+                 'Please settle the balance.', [], payment_amount_usd=19.20)
+    assert world.get_stage('clearline_wireless', 'phone') == 'paid'
+    ledger.advance_days(3)
+    assert any('zero balance' in mail.subject for mail in world.deliver_due(case.id))

@@ -17,8 +17,13 @@ jobs:
         with:
           python-version: ${{ matrix.python-version }}
       - name: Install
-        run: pip install -e ".[dev]"
+        run: pip install -e ".[dev,hosting]"
       - name: Lint
         run: ruff check src tests
       - name: Test (offline, scripted model)
         run: pytest -m "not live"
+      - name: Verify hosted dependencies and browser syntax
+        run: |
+          python -c "from strands.models.openai import OpenAIModel; import firebase_admin"
+          node --check web/app.js
+          bash -n deploy.sh

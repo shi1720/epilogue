@@ -22,7 +22,7 @@ DEFAULT_MODEL_IDS = {
     "bedrock": os.environ.get("BEDROCK_MODEL_ID", "us.anthropic.claude-sonnet-4-5-20250929-v1:0"),
     "anthropic": "claude-sonnet-4-5",
     "gemini": "gemini-3.6-flash",
-    "openai": "gpt-4.1",
+    "openai": "gpt-4.1-mini",
     "ollama": "qwen3:8b",
     "litellm": "bedrock/us.anthropic.claude-sonnet-4-5-20250929-v1:0",
 }
@@ -82,7 +82,11 @@ def _make_provider_model(provider: str, model_id: str | None):
     if provider == "openai":
         from strands.models.openai import OpenAIModel
 
-        return OpenAIModel(model_id=model_id, params={"temperature": 0.4})
+        return OpenAIModel(
+            model_id=model_id,
+            client_args={"timeout": 90.0, "max_retries": 0},
+            params={"temperature": 0.4, "max_tokens": 4096},
+        )
     if provider == "ollama":
         from strands.models.ollama import OllamaModel
 

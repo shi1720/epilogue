@@ -77,8 +77,12 @@ def test_full_lifecycle_of_a_bank_matter(tmp_path):
 
     case = vigil.open_case("My dad James died Aug 30.", "First Harbor Bank statement …4417")
     tasks = ledger.tasks_for_case(case.id)
-    assert len(tasks) == 1
-    task = tasks[0]
+    assert len(tasks) == 5  # bank plus three bureau alerts and benefits scan
+    task = next(t for t in tasks if t.institution_id == "first_harbor_bank")
+    for extra in tasks:
+        if extra.id != task.id:
+            extra.status = TaskStatus.DISMISSED
+            ledger.save_task(extra)
 
     # Day 0: the Steward makes first contact (no certificate — the bank will push back).
     model.turns.extend(
@@ -141,8 +145,13 @@ def test_quiet_day_is_quiet(tmp_path):
     model = ScriptedModel(structured=_intake_structured())
     vigil = Vigil(ledger, model, enable_weekly_notes=False)
     case = vigil.open_case("intake", "docs")
-    # Work the only task, then the next day should be silent.
-    task = ledger.tasks_for_case(case.id)[0]
+    # Isolate the bank matter; required planning coverage is tested separately.
+    tasks = ledger.tasks_for_case(case.id)
+    task = next(t for t in tasks if t.institution_id == "first_harbor_bank")
+    for extra in tasks:
+        if extra.id != task.id:
+            extra.status = TaskStatus.DISMISSED
+            ledger.save_task(extra)
     model.turns.extend(
         [
             (

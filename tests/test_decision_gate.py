@@ -202,3 +202,89 @@ def test_failed_submissions_never_burn_certified_copies(runtime):
     )
     assert "Unknown document" in out
     assert runtime.vault_status()["certified_death_certificate"] == 5
+
+
+def test_bureaus_preserve_certified_originals(runtime):
+    task = TaskItem(case_id=runtime.case.id, title="Credit alert", category="identity",
+                    institution_id="equifax_sim")
+    runtime.ledger.save_task(task)
+    submit = _tool(build_case_tools(runtime), "submit_to_institution")
+    result = submit(task_id=task.id, institution_id="equifax_sim", subject="Deceased alert",
+                    body="Please place the alert.", attachments=["certified_death_certificate"])
+    assert "Nothing was sent" in result
+    assert runtime.vault_status()["certified_death_certificate"] == 5
+    assert runtime.ledger.mail_for_case(runtime.case.id) == []
+    result = submit(task_id=task.id, institution_id="equifax_sim", subject="Deceased alert",
+                    body="Please place the alert.", attachments=["death_certificate_copy"])
+    assert "Delivered" in result
+    assert runtime.vault_status()["certified_death_certificate"] == 5
+
+
+def test_repayment_requires_explicit_amount_and_survivor_approval(runtime):
+    task = TaskItem(case_id=runtime.case.id, title="Benefit repayment", category="government",
+                    institution_id="fed_benefits")
+    runtime.ledger.save_task(task)
+    runtime.world.set_stage('fed_benefits', task.id, 'await_repayment')
+    submit = _tool(build_case_tools(runtime), 'submit_to_institution')
+    args = dict(task_id=task.id, institution_id='fed_benefits', subject='Repayment of $1,847',
+                body='Please provide instructions to repay the $1,847 returned benefit.')
+    submit(**args)
+    assert runtime.world.get_stage('fed_benefits', task.id) == 'await_repayment'
+    assert 'BLOCKED' in submit(**args, moves_money_usd=1847)
+    assert runtime.world.get_stage('fed_benefits', task.id) == 'await_repayment'
+    runtime.ledger.save_decision(Decision(
+        case_id=runtime.case.id, task_id=task.id, question='Repay $1,847?', context='Return overpayment',
+        options=[DecisionOption(id='repay', label='Repay', consequence='Return funds', authorizes=True)],
+        status='resolved', resolution_option_id='repay', authorizes_amount_usd=1847))
+    assert 'Delivered' in submit(**args, moves_money_usd=1847)
+    assert runtime.world.get_stage('fed_benefits', task.id) == 'done'
+
+
+def test_unmapped_matters_cannot_send_to_an_unrelated_institution(runtime):
+    task = TaskItem(case_id=runtime.case.id, title='An unsupported provider', category='financial')
+    runtime.ledger.save_task(task)
+    submit = _tool(build_case_tools(runtime), 'submit_to_institution')
+    result = submit(task_id=task.id, institution_id='daily_ledger_news', subject='Request details',
+                    body='Please provide the account information.', attachments=['certified_death_certificate'])
+    assert 'Nothing was sent' in result
+    assert runtime.ledger.mail_for_case(runtime.case.id) == []
+    assert runtime.vault_status()['certified_death_certificate'] == 5
+
+
+def test_followup_institution_omissions_and_duplicate_titles_are_repaired(runtime):
+    tools = build_case_tools(runtime)
+    create = _tool(tools, 'create_matter')
+    create(title='Request PixelVault refund', category='benefits')
+    task = runtime.ledger.tasks_for_case(runtime.case.id)[0]
+    assert task.institution_id == 'pixelvault'
+    assert task.risk == 'irreversible'
+    assert task.category == 'digital_legacy'
+    result = create(title='Request PixelVault refund!', category='benefits')
+    assert task.id in result
+    assert len(runtime.ledger.tasks_for_case(runtime.case.id)) == 1
+
+
+def test_existing_named_matter_gets_correct_channel_without_bypassing_gate(runtime):
+    task = TaskItem(case_id=runtime.case.id, title='Request PixelVault refund', category='benefits')
+    runtime.ledger.save_task(task)
+    submit = _tool(build_case_tools(runtime), 'submit_to_institution')
+    result = submit(task_id=task.id, institution_id='pixelvault', subject='Refund request', body='Please refund.')
+    assert 'BLOCKED' in result
+    assert runtime.ledger.get_task(task.id).institution_id == 'pixelvault'
+    assert runtime.ledger.mail_for_case(runtime.case.id) == []
+
+
+def test_parallel_followup_creation_is_atomic(runtime, monkeypatch):
+    import time
+    from concurrent.futures import ThreadPoolExecutor
+    save = runtime.ledger.save_task
+    def slow_save(task):
+        time.sleep(.02)
+        return save(task)
+    monkeypatch.setattr(runtime.ledger, 'save_task', slow_save)
+    def create(_):
+        return _tool(build_case_tools(runtime), 'create_matter')(
+            title='Request PixelVault refund', category='benefits')
+    with ThreadPoolExecutor(max_workers=8) as pool:
+        list(pool.map(create, range(8)))
+    assert len(runtime.ledger.tasks_for_case(runtime.case.id)) == 1

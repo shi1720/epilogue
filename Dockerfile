@@ -9,7 +9,7 @@ WORKDIR /app
 COPY pyproject.toml README.md LICENSE ./
 COPY src ./src
 COPY web ./web
-RUN pip install --no-cache-dir .
+RUN pip install --no-cache-dir '.[hosting]'
 
 ENV EPILOGUE_DATA_DIR=/app/data
 EXPOSE 8000

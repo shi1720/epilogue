@@ -27,7 +27,7 @@ from dataclasses import dataclass, field
 from datetime import date, datetime, timedelta, timezone
 
 from .agents import build_steward, read_intake, run_archivist, run_planner, triage_mail
-from .domain import Case, Person, Survivor, TaskStatus, utcnow
+from .domain import AccountInventory, Case, IntakeProfile, Person, Survivor, TaskStatus, utcnow
 from .ledger import Ledger
 from .runtime import Runtime
 from .simworld import SimWorld
@@ -46,6 +46,8 @@ _TRANSIENT_MARKERS = (
 
 def _is_transient(exc: Exception) -> bool:
     text = str(exc).lower()
+    if "insufficient_quota" in text or "billing" in text:
+        return False
     return any(marker in text for marker in _TRANSIENT_MARKERS)
 
 
@@ -124,7 +126,7 @@ class Vigil:
                 "Vigil",
                 "status",
                 "A model-provider hiccup interrupted one matter — it will be retried next cycle.",
-                detail=str(exc)[:300],
+                detail=f"Provider failure type: {type(exc).__name__}",
             )
             return False
 
@@ -134,8 +136,11 @@ class Vigil:
 
     def open_case(self, narrative: str, documents: str) -> Case:
         """Run the full intake pipeline: narrative → profile → inventory → plan."""
-        profile = _with_retry("intake", lambda: read_intake(self.model, narrative, today=self.ledger.sim_today()))
-        case = Case(
+        saved_profile = self.ledger.kv_get("intake_profile")
+        profile = (IntakeProfile.model_validate_json(saved_profile) if saved_profile else
+                   _with_retry("intake", lambda: read_intake(self.model, narrative, today=self.ledger.sim_today())))
+        self.ledger.kv_set("intake_profile", profile.model_dump_json())
+        case = self.ledger.first_case() or Case(
             deceased=Person(
                 full_name=profile.deceased_full_name,
                 date_of_death=profile.deceased_date_of_death,
@@ -157,9 +162,13 @@ class Vigil:
             detail=f"Immediate worries heard at intake: {', '.join(profile.immediate_worries) or '—'}",
         )
         rt = self._runtime(case)
-        inventory = _with_retry("archivist", lambda: run_archivist(self.model, rt, documents))
-        _with_retry("planner", lambda: run_planner(self.model, rt, profile, inventory))
-        self.world.seed_case_events(case.id)
+        saved_inventory = self.ledger.kv_get(f"inventory:{case.id}")
+        inventory = (AccountInventory.model_validate_json(saved_inventory) if saved_inventory else
+                     _with_retry("archivist", lambda: run_archivist(self.model, rt, documents)))
+        if not self.ledger.kv_get("intake_planned"):
+            _with_retry("planner", lambda: run_planner(self.model, rt, profile, inventory))
+            self.world.seed_case_events(case.id)
+            self.ledger.kv_set("intake_planned", "1")
         return case
 
     # ------------------------------------------------------------------
@@ -199,11 +208,11 @@ class Vigil:
                     raise
                 continue  # mail stays unread; the next cycle triages it
             report.mail_triaged += 1
-            mail.status = "processed"
-            self.ledger.save_mail(mail)
             task = self.ledger.get_task(mail.task_id) if mail.task_id else None
 
             if triage.disposition == "resolved" and task is not None:
+                mail.status = "processed"
+                self.ledger.save_mail(mail)
                 task.status = TaskStatus.DONE
                 task.notes.append(f"[{self.ledger.sim_today()}] {triage.summary}")
                 self.ledger.save_task(task)
@@ -218,6 +227,8 @@ class Vigil:
                 report.matters_touched.append(task.id)
                 continue
             if triage.disposition == "wait":
+                mail.status = "processed"
+                self.ledger.save_mail(mail)
                 if task is not None and triage.follow_up_days:
                     self._schedule_follow_up(task, triage.follow_up_days, triage.summary)
                 continue
@@ -231,7 +242,9 @@ class Vigil:
                 f"A first read classified it as: {triage.model_dump_json()}\n\n"
                 "Handle this now, end to end. If it needs the survivor, craft the decision well."
             )
-            self._run_steward(steward, prompt, case_id)
+            if self._run_steward(steward, prompt, case_id):
+                mail.status = "processed"
+                self.ledger.save_mail(mail)
             if mail.task_id:
                 report.matters_touched.append(mail.task_id)
 
@@ -347,7 +360,6 @@ class Vigil:
         ]
         if len(events) < 3:
             return
-        self.ledger.kv_set(f"weekly_note_date:{case.id}", today.isoformat())
         from strands import Agent
 
         first = case.survivor.full_name.split()[0]
@@ -366,6 +378,7 @@ class Vigil:
         lines = "\n".join(f"[{e.sim_date}] {e.actor}: {e.summary}" for e in reversed(events))
         note = str(writer(f"This week's record:\n{lines}\n\nWrite this week's note to {first}."))
         self.ledger.kv_set(f"weekly_note:{case.id}", note.strip())
+        self.ledger.kv_set(f"weekly_note_date:{case.id}", today.isoformat())
         self.ledger.record(
             case.id, "Epilogue", "note", f"A note for {first} about the week", detail=note.strip()
         )
@@ -380,6 +393,8 @@ def resolve_decision(ledger: Ledger, decision_id: str, option_id: str, note: str
     decision = ledger.get_decision(decision_id)
     if decision is None or decision.status == "resolved":
         return
+    if not any(option.id == option_id for option in decision.options):
+        raise ValueError("Choose one of the options on this decision.")
     decision.status = "resolved"
     decision.resolution_option_id = option_id
     decision.resolution_note = note or None

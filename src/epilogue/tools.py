@@ -21,6 +21,7 @@ from datetime import datetime, timedelta, timezone
 from strands import tool
 
 from .domain import AccountInventory, Decision, DecisionOption, TaskItem, TaskStatus
+from .planning import ALIASES
 from .playbooks import PLAYBOOKS, playbook_for_kind, render_playbook
 from .runtime import Runtime
 from .simworld import INSTITUTIONS
@@ -28,10 +29,29 @@ from .simworld import INSTITUTIONS
 _STATUS_HELP = ", ".join(s.value for s in TaskStatus)
 
 
+def _named_institution(title):
+    matches = {key for key, aliases in ALIASES.items() if any(alias in title.lower() for alias in aliases)}
+    return next(iter(matches)) if len(matches) == 1 else None
+
+
+def _title_key(title):
+    return ''.join(char for char in title.casefold() if char.isalnum())
+
+
 def build_case_tools(rt: Runtime) -> list:
     """Build the ledger/correspondence/decision tools bound to one case."""
 
     case_id = rt.case.id
+
+    def identify(task):
+        # A uniquely named supported provider can repair an omitted model field.
+        # Ambiguous and unknown names remain unassigned; they cannot borrow a channel.
+        if not task.institution_id and (key := _named_institution(task.title)):
+            task.institution_id = key
+            if INSTITUTIONS[key].kind == 'digital':
+                task.category, task.risk = 'digital_legacy', 'irreversible'
+            rt.ledger.save_task(task)
+        return task
 
     @tool
     def get_case_file() -> str:
@@ -90,6 +110,7 @@ def build_case_tools(rt: Runtime) -> list:
         t = rt.ledger.get_task(task_id)
         if t is None:
             return f"No matter with id {task_id}."
+        identify(t)
         lines = [
             f"{t.id}: {t.title}",
             f"  category={t.category} risk={t.risk} status={t.status.value} institution={t.institution_id}",
@@ -111,6 +132,9 @@ def build_case_tools(rt: Runtime) -> list:
         pending = rt.ledger.open_decision_for_task(t.id)
         if pending:
             lines.append(f"  A decision is OPEN and waiting on the survivor: {pending.question}")
+        if not t.institution_id:
+            lines.append("  No institution channel is assigned. Research and prepare next steps; do not "
+                         "send this matter to an unrelated institution or claim it was contacted.")
         mail = [m for m in rt.ledger.mail_for_case(case_id, limit=200) if m.task_id == t.id][:4]
         for m in mail:
             arrow = "→" if m.direction == "outbound" else "←"
@@ -138,18 +162,29 @@ def build_case_tools(rt: Runtime) -> list:
             risk: routine | careful | irreversible.
             estimated_minutes_saved: Survivor minutes this saves when automated.
         """
-        task = TaskItem(
-            case_id=case_id,
-            title=title,
-            category=category,
-            institution_id=institution_id or None,
-            why=why,
-            risk=risk,
-            estimated_minutes_saved=estimated_minutes_saved,
-        )
-        rt.ledger.save_task(task)
-        rt.ledger.record(case_id, "Steward", "status", f"Opened new matter: {title}", task_id=task.id)
-        return f"Created {task.id}."
+        # Strands may execute two tool calls from the same model turn concurrently.
+        with rt.ledger.atomic():
+            for existing in rt.ledger.tasks_for_case(case_id):
+                if _title_key(existing.title) == _title_key(title):
+                    identify(existing)
+                    return f"Already on file as {existing.id} ({existing.status.value}). Review and update that matter; do not duplicate it."
+            institution_id = institution_id or _named_institution(title) or ''
+            if institution_id and institution_id not in INSTITUTIONS:
+                return "That institution has no simulated channel. Leave its ID empty and prepare manual next steps."
+            if institution_id and INSTITUTIONS[institution_id].kind == 'digital':
+                category, risk = 'digital_legacy', 'irreversible'
+            task = TaskItem(
+                case_id=case_id,
+                title=title,
+                category=category,
+                institution_id=institution_id or None,
+                why=why,
+                risk=risk,
+                estimated_minutes_saved=estimated_minutes_saved,
+            )
+            rt.ledger.save_task(task)
+            rt.ledger.record(case_id, "Steward", "status", f"Opened new matter: {title}", task_id=task.id)
+            return f"Created {task.id}."
 
     @tool
     def update_matter(task_id: str, status: str = "", note: str = "", follow_up_days: int = 0) -> str:
@@ -211,18 +246,34 @@ def build_case_tools(rt: Runtime) -> list:
                 Certified copies are finite — use photocopies unless certified is
                 explicitly required.
             moves_money_usd: If this action moves, repays, or forfeits money,
-                the dollar amount. Be honest; the gate depends on it.
+                the dollar amount. A payment in this simulated world only happens
+                when this field is set; mentioning money in a letter sends no funds.
+                The gate requires explicit survivor authorization above their threshold.
         """
         attachments = attachments or []
         t = rt.ledger.get_task(task_id)
         if t is None:
             return f"No matter with id {task_id}. Create or look up the matter first."
+        identify(t)
         inst = INSTITUTIONS.get(institution_id)
         if inst is None:
             return (
                 f"Unknown institution '{institution_id}' — nothing was sent and no documents were "
                 f"used. Known institutions: {', '.join(sorted(INSTITUTIONS))}."
             )
+        if t.institution_id != institution_id:
+            return ("This institution does not match the matter, or the matter has no supported channel. "
+                    "Nothing was sent. Use a matter assigned to this exact institution; otherwise "
+                    "prepare instructions for the family without claiming contact was made.")
+        if inst.kind == "credit_bureau" and "certified_death_certificate" in attachments:
+            return (
+                "This simulated bureau accepts 'death_certificate_copy'. Nothing was sent. "
+                "Use that copy instead and preserve certified originals for the bank and insurer."
+            )
+        # The destination's capabilities outrank model-supplied risk labels.
+        if inst.kind == "digital":
+            t.category, t.risk = "digital_legacy", "irreversible"
+            rt.ledger.save_task(t)
         gate = rt.gate_check(t, f"submit to {institution_id}: {subject}", moves_money_usd)
         if not gate.allowed:
             # Only park the matter as needs_decision when a decision actually exists
@@ -249,7 +300,8 @@ def build_case_tools(rt: Runtime) -> list:
                 )
         for doc in attachments:
             rt.vault_take(doc)
-        receipt = rt.world.submit(case_id, task_id, institution_id, channel, subject, body, attachments)
+        receipt = rt.world.submit(case_id, task_id, institution_id, channel, subject, body, attachments,
+                                  payment_amount_usd=moves_money_usd)
         if receipt.startswith("ERROR"):
             return receipt
         pb = (
@@ -272,7 +324,18 @@ def build_case_tools(rt: Runtime) -> list:
             detail=body,
             task_id=task_id,
         )
-        return f"{receipt} {gate.reason} Follow-up auto-scheduled in {wait_days} days if no reply."
+        payment_note = ""
+        stage = rt.world.get_stage(institution_id, task_id)
+        due = 1847 if institution_id == "fed_benefits" and stage == "await_repayment" else (
+            19.20 if institution_id == "clearline_wireless" and stage == "awaiting_payment" else 0
+        )
+        if due:
+            payment_note = (
+                f" No funds were transferred; ${due:,.2f} remains due. To simulate paying this bill, "
+                "first obtain any survivor approval required by the gate, then submit with "
+                f"moves_money_usd={due}. A letter asking for instructions does not settle the balance."
+            )
+        return f"{receipt} {gate.reason} Follow-up auto-scheduled in {wait_days} days if no reply.{payment_note}"
 
     @tool
     def ask_survivor(
