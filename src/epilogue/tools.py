@@ -21,6 +21,7 @@ from datetime import datetime, timedelta, timezone
 from strands import tool
 
 from .domain import AccountInventory, Decision, DecisionOption, TaskItem, TaskStatus
+from .planning import ALIASES
 from .playbooks import PLAYBOOKS, playbook_for_kind, render_playbook
 from .runtime import Runtime
 from .simworld import INSTITUTIONS
@@ -28,10 +29,29 @@ from .simworld import INSTITUTIONS
 _STATUS_HELP = ", ".join(s.value for s in TaskStatus)
 
 
+def _named_institution(title):
+    matches = {key for key, aliases in ALIASES.items() if any(alias in title.lower() for alias in aliases)}
+    return next(iter(matches)) if len(matches) == 1 else None
+
+
+def _title_key(title):
+    return ''.join(char for char in title.casefold() if char.isalnum())
+
+
 def build_case_tools(rt: Runtime) -> list:
     """Build the ledger/correspondence/decision tools bound to one case."""
 
     case_id = rt.case.id
+
+    def identify(task):
+        # A uniquely named supported provider can repair an omitted model field.
+        # Ambiguous and unknown names remain unassigned; they cannot borrow a channel.
+        if not task.institution_id and (key := _named_institution(task.title)):
+            task.institution_id = key
+            if INSTITUTIONS[key].kind == 'digital':
+                task.category, task.risk = 'digital_legacy', 'irreversible'
+            rt.ledger.save_task(task)
+        return task
 
     @tool
     def get_case_file() -> str:
@@ -90,6 +110,7 @@ def build_case_tools(rt: Runtime) -> list:
         t = rt.ledger.get_task(task_id)
         if t is None:
             return f"No matter with id {task_id}."
+        identify(t)
         lines = [
             f"{t.id}: {t.title}",
             f"  category={t.category} risk={t.risk} status={t.status.value} institution={t.institution_id}",
@@ -141,6 +162,15 @@ def build_case_tools(rt: Runtime) -> list:
             risk: routine | careful | irreversible.
             estimated_minutes_saved: Survivor minutes this saves when automated.
         """
+        for existing in rt.ledger.tasks_for_case(case_id):
+            if _title_key(existing.title) == _title_key(title):
+                identify(existing)
+                return f"Already on file as {existing.id} ({existing.status.value}). Review and update that matter; do not duplicate it."
+        institution_id = institution_id or _named_institution(title) or ''
+        if institution_id and institution_id not in INSTITUTIONS:
+            return "That institution has no simulated channel. Leave its ID empty and prepare manual next steps."
+        if institution_id and INSTITUTIONS[institution_id].kind == 'digital':
+            category, risk = 'digital_legacy', 'irreversible'
         task = TaskItem(
             case_id=case_id,
             title=title,
@@ -222,6 +252,7 @@ def build_case_tools(rt: Runtime) -> list:
         t = rt.ledger.get_task(task_id)
         if t is None:
             return f"No matter with id {task_id}. Create or look up the matter first."
+        identify(t)
         inst = INSTITUTIONS.get(institution_id)
         if inst is None:
             return (

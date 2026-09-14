@@ -249,3 +249,26 @@ def test_unmapped_matters_cannot_send_to_an_unrelated_institution(runtime):
     assert 'Nothing was sent' in result
     assert runtime.ledger.mail_for_case(runtime.case.id) == []
     assert runtime.vault_status()['certified_death_certificate'] == 5
+
+
+def test_followup_institution_omissions_and_duplicate_titles_are_repaired(runtime):
+    tools = build_case_tools(runtime)
+    create = _tool(tools, 'create_matter')
+    create(title='Request PixelVault refund', category='benefits')
+    task = runtime.ledger.tasks_for_case(runtime.case.id)[0]
+    assert task.institution_id == 'pixelvault'
+    assert task.risk == 'irreversible'
+    assert task.category == 'digital_legacy'
+    result = create(title='Request PixelVault refund!', category='benefits')
+    assert task.id in result
+    assert len(runtime.ledger.tasks_for_case(runtime.case.id)) == 1
+
+
+def test_existing_named_matter_gets_correct_channel_without_bypassing_gate(runtime):
+    task = TaskItem(case_id=runtime.case.id, title='Request PixelVault refund', category='benefits')
+    runtime.ledger.save_task(task)
+    submit = _tool(build_case_tools(runtime), 'submit_to_institution')
+    result = submit(task_id=task.id, institution_id='pixelvault', subject='Refund request', body='Please refund.')
+    assert 'BLOCKED' in result
+    assert runtime.ledger.get_task(task.id).institution_id == 'pixelvault'
+    assert runtime.ledger.mail_for_case(runtime.case.id) == []
