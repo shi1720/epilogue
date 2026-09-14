@@ -17,10 +17,10 @@ def hosted():
 def identity(request: Request):
     if not hosted():
         return {"uid": "local", "name": "Local workspace"}
-    from firebase_admin import auth
     cookie = request.cookies.get("__session")
     if not cookie:
         raise HTTPException(401, "Sign in to open your private test workspace.")
+    from firebase_admin import auth
     try:
         claims = auth.verify_session_cookie(cookie, check_revoked=True, app=firebase_app())
     except Exception as exc:
