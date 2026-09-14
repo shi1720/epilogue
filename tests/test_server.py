@@ -9,8 +9,8 @@ case end to end.
 from __future__ import annotations
 
 import importlib
+import json
 import time
-from collections import deque
 from datetime import date
 
 import pytest
@@ -26,6 +26,15 @@ from epilogue.domain import (
     TriageResult,
 )
 from epilogue.engine import Vigil
+
+
+def _triage_by_content(messages) -> TriageResult:
+    text = json.dumps(messages)
+    if "restricted" in text or "balance letter" in text.lower():
+        return TriageResult(disposition="resolved", summary="Accounts restricted; balance letter received.")
+    if "documentation" in text.lower() or "certified" in text.lower():
+        return TriageResult(disposition="needs_document", summary="Bank requires a certified death certificate.")
+    return TriageResult(disposition="wait", summary="Nothing to do yet.")
 
 
 def _scripted_model() -> ScriptedModel:
@@ -61,24 +70,10 @@ def _scripted_model() -> ScriptedModel:
                     )
                 ]
             ),
-            "TriageResult": deque(
-                [
-                    TriageResult(
-                        disposition="needs_document",
-                        summary="Bank requires a certified death certificate.",
-                    ),
-                    # Day 8 also delivers simworld's ambient PixelVault renewal
-                    # reminder (seeded at intake) — triaged as nothing-to-do-yet.
-                    TriageResult(
-                        disposition="wait",
-                        summary="A renewal reminder; the matter is already being handled.",
-                    ),
-                    TriageResult(
-                        disposition="resolved",
-                        summary="Accounts restricted; balance letter received.",
-                    ),
-                ]
-            ),
+            # Keyed by mail content, not call order: the day-8 cycle delivers both
+            # the bank's confirmation and simworld's ambient renewal reminder, and
+            # their relative order is an implementation detail.
+            "TriageResult": _triage_by_content,
         }
     )
 

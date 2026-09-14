@@ -41,11 +41,14 @@ class ScriptedModel(Model):
     def update_config(self, **model_config: Any) -> None:  # pragma: no cover
         pass
 
-    def _structured_answer(self, tool_specs) -> tuple[str, dict] | None:
+    def _structured_answer(self, messages, tool_specs) -> tuple[str, dict] | None:
         """If a structured-output tool is among the specs, answer it from the script.
 
         Strands registers the target Pydantic model as a tool and (if needed)
         forces it on a second pass; a scripted model simply answers on sight.
+        A callable script value receives the conversation messages, so answers
+        can key off content instead of call order (immune to delivery-order
+        differences across platforms).
         """
         for spec in tool_specs or []:
             for key, value in self.structured.items():
@@ -53,13 +56,13 @@ class ScriptedModel(Model):
                     if isinstance(value, deque):
                         value = value.popleft()
                     if callable(value):
-                        value = value(None)
+                        value = value(messages)
                     return spec["name"], json.loads(value.model_dump_json())
         return None
 
     async def stream(self, messages, tool_specs=None, system_prompt=None, tool_choice=None, **kwargs):
         self.calls.append({"messages": messages, "system_prompt": system_prompt})
-        structured = self._structured_answer(tool_specs)
+        structured = self._structured_answer(messages, tool_specs)
         turn = (
             ("tool", *structured)
             if structured
