@@ -33,7 +33,7 @@ agentcore = ["bedrock-agentcore"]
 epilogue = "epilogue.cli:main"
 
 [project.urls]
-Homepage = "https://github.com/shi1720/afh-aws"
+Homepage = "https://github.com/shi1720/epilogue"
 
 [tool.hatch.build.targets.wheel]
 packages = ["src/epilogue"]

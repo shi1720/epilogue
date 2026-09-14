@@ -6,7 +6,7 @@
 
 *An autonomous after-loss administration agent, built on the [Strands Agents SDK](https://strandsagents.com) for the AWS **Agents for Humans** hackathon — Everyday Agents track.*
 
-[![CI](https://github.com/shi1720/afh-aws/actions/workflows/ci.yml/badge.svg)](https://github.com/shi1720/afh-aws/actions/workflows/ci.yml)
+[![CI](https://github.com/shi1720/epilogue/actions/workflows/ci.yml/badge.svg)](https://github.com/shi1720/epilogue/actions/workflows/ci.yml)
 [![License: MIT](https://img.shields.io/badge/License-MIT-3e5c50.svg)](LICENSE)
 [![Python 3.10+](https://img.shields.io/badge/python-3.10%2B-b07d2e.svg)](pyproject.toml)
 [![Built with Strands](https://img.shields.io/badge/built%20with-Strands%20Agents-26251e.svg)](https://strandsagents.com)
@@ -73,7 +73,7 @@ Defense in depth like this is what it takes to hand an autonomous agent the affa
 ## Quickstart
 
 ```bash
-git clone https://github.com/shi1720/afh-aws.git && cd afh-aws
+git clone https://github.com/shi1720/epilogue.git && cd epilogue
 python -m venv .venv && source .venv/bin/activate
 pip install -e .
 

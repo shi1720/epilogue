@@ -151,7 +151,7 @@ pres.layout = "LAYOUT_WIDE"; // 13.33 x 7.5
   s.addText([
     { text: "Epilogue", options: { fontFace: SERIF, fontSize: 30, color: "F2EFE6" } },
     { text: ".", options: { fontFace: SERIF, fontSize: 30, color: AMBER } },
-    { text: "   github.com/shi1720/afh-aws  ·  MIT licensed  ·  Strands Agents SDK  ·  Amazon Bedrock", options: { fontFace: SANS, fontSize: 14, color: "8D8770" } },
+    { text: "   github.com/shi1720/epilogue  ·  MIT licensed  ·  Strands Agents SDK  ·  Amazon Bedrock", options: { fontFace: SANS, fontSize: 14, color: "8D8770" } },
   ], { x: 0.95, y: 5.6, w: 11.8, h: 0.7, isTextBox: true, margin: 0, valign: "middle" });
   s.addNotes("The hardest week of ordinary life deserves an agent for humans. This is Epilogue. Thank you.");
 }

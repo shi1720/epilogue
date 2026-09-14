@@ -26,6 +26,7 @@ from .config import db_path, make_model
 from .domain import AuditEvent
 from .engine import Vigil
 from .ledger import Ledger
+from .runtime import DEFAULT_VAULT, vault_status
 
 WEB_DIR = Path(__file__).resolve().parent.parent.parent / "web"
 
@@ -126,6 +127,8 @@ def get_state() -> JSONResponse:
             "timeline": timeline,
             "activity": activity,
             "weekly_note": ledger.kv_get(f"weekly_note:{case.id}"),
+            "vault": vault_status(ledger, case.id),
+            "vault_initial": DEFAULT_VAULT,
             "status": STATE.status,
         }
     )

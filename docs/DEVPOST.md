@@ -81,7 +81,7 @@ Real-world adapters (secure email, Lob print-mail, institution portals, national
 ## Try it (testing instructions for judges)
 
 ```bash
-git clone https://github.com/shi1720/afh-aws.git && cd afh-aws
+git clone https://github.com/shi1720/epilogue.git && cd epilogue
 python -m venv .venv && source .venv/bin/activate && pip install -e .
 # Bedrock (default): AWS creds with Claude Sonnet access; or:
 #   EPILOGUE_MODEL_PROVIDER=anthropic + ANTHROPIC_API_KEY (pip install -e ".[anthropic]")

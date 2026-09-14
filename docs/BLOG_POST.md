@@ -15,7 +15,7 @@ The answer changed the project. When someone dies, their family inherits an esti
 
 The British call this workload *sadmin*. It lands, in full, on people who are grieving.
 
-So I built **Epilogue**: an autonomous agent that settles what's left behind. This post is the build story — what worked, what surprised me, and the patterns I'd reuse. The code is open source (MIT): **github.com/shi1720/afh-aws**.
+So I built **Epilogue**: an autonomous agent that settles what's left behind. This post is the build story — what worked, what surprised me, and the patterns I'd reuse. The code is open source (MIT): **github.com/shi1720/epilogue**.
 
 ## What Epilogue does
 
@@ -93,4 +93,4 @@ Real-world adapters behind the same seam the simulator uses (secure email, print
 
 The hardest week of ordinary life deserves an agent for humans.
 
-*Epilogue was built by Shivam Gupta for the AWS Agents for Humans hackathon (Everyday Agents track), on the Strands Agents SDK and Amazon Bedrock. Code, tests, demo, and an AgentCore entrypoint: github.com/shi1720/afh-aws — MIT licensed. The demo case and all institutions in it are fictional.*
+*Epilogue was built by Shivam Gupta for the AWS Agents for Humans hackathon (Everyday Agents track), on the Strands Agents SDK and Amazon Bedrock. Code, tests, demo, and an AgentCore entrypoint: github.com/shi1720/epilogue — MIT licensed. The demo case and all institutions in it are fictional.*

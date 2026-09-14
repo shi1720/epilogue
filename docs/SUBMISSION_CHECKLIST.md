@@ -5,11 +5,10 @@ Total hands-on time: ~60–90 minutes, most of it the video.
 
 ## 1. Repository (5 min)
 
-- [ ] The working branch `claude/quirky-knuth-4o6pqv` is already the repo's **default branch**, so everything is live as-is. *(Optional tidy-up: Settings → Branches → rename it to `main`; GitHub updates the default automatically.)*
-- [ ] Make the repository **public** (Settings → General → Danger Zone → Change visibility).
+- [x] Repo renamed to `shi1720/epilogue`, branch renamed to `main` — done.
+- [ ] Make the repository **public** (Settings → General → Danger Zone → Change visibility). As of the last check it still returns 404 to logged-out visitors — judges cannot see a private repo, so this is REQUIRED.
 - [ ] Confirm GitHub shows **"MIT license"** in the About sidebar (it auto-detects `LICENSE`; give it a minute after going public).
 - [ ] Set the About description: *"Epilogue — the agent that settles what's left behind. Autonomous after-loss administration on Strands Agents + Amazon Bedrock."* Add topics: `strands-agents`, `aws`, `bedrock`, `ai-agents`, `hackathon`.
-- [ ] *(Optional but nice)* Rename the repo to `epilogue` (Settings → General). GitHub redirects the old URL automatically; if you do this, use the new URL everywhere below.
 
 ## 2. Model credentials for the demo (5 min)
 
@@ -25,7 +24,7 @@ Sanity check before recording: `epilogue demo`, open the dashboard, click **Use 
 
 ## 3. The video (45–60 min)
 
-- [ ] Open `docs/VIDEO_SCRIPT.md` — the voiceover is written **word for word** (~4:25 at a calm pace) with screen directions and a shot checklist.
+- [ ] The voiceover script (word for word, ~4:25 at a calm pace, with screen directions and a shot checklist) was shared with you directly in the Claude chat — it is intentionally not in the repo.
 - [ ] Slides are at `docs/media/slides.pptx` (speaker notes included). Slides 1–3 open, 4–6 close.
 - [ ] Do one rehearsal run, reset (`epilogue reset` or delete `data/`), then record the take.
 - [ ] Upload to YouTube (public or unlisted — both are accepted).

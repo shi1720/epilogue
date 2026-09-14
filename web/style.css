@@ -173,6 +173,9 @@ button.ghost:hover { color: var(--ink); }
 
 @media (max-width: 980px) { .layout { grid-template-columns: 1fr; } }
 
+/* keep the fixed clock widget clear of the sidebar's tail */
+.col-side { padding-bottom: 150px; }
+
 /* ---------------- hero ---------------- */
 
 .hero h1 { font-size: 30px; margin: 4px 0 16px; line-height: 1.25; }

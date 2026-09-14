@@ -20,6 +20,13 @@ def main(argv: list[str] | None = None) -> int:
     sub.add_parser("demo", help="Run with a fresh database, ready for the demo case")
     sub.add_parser("reset", help="Clear all case data")
 
+    preview = sub.add_parser(
+        "preview",
+        help="Explore the dashboard with a seeded mid-case state — no model credentials needed",
+    )
+    preview.add_argument("--host", default="127.0.0.1")
+    preview.add_argument("--port", type=int, default=8000)
+
     tick = sub.add_parser("tick", help="Run one Vigil work cycle from the terminal")
     tick.add_argument("--advance", type=int, default=0, help="Advance the case clock N days first")
 
@@ -50,7 +57,9 @@ def main(argv: list[str] | None = None) -> int:
         print(report.summary())
         return 0
 
-    if args.command in ("serve", "demo", None):
+    if args.command in ("serve", "demo", "preview", None):
+        import os
+
         import uvicorn
 
         if args.command == "demo":
@@ -59,6 +68,15 @@ def main(argv: list[str] | None = None) -> int:
 
             Ledger(db_path()).reset()
             print("Fresh case database. The intake form will offer the demo case.")
+        if args.command == "preview":
+            # Keep the preview world separate from any real case data.
+            os.environ.setdefault("EPILOGUE_DATA_DIR", "data-preview")
+            from .config import db_path
+            from .ledger import Ledger
+            from .preview import seed_preview
+
+            case = seed_preview(Ledger(db_path()))
+            print(f"Preview case seeded ({case.id}) — no model credentials required.")
         host = getattr(args, "host", "127.0.0.1")
         port = int(getattr(args, "port", 8000) or 8000)
         print(f"Epilogue is listening at http://{host}:{port}")

@@ -28,6 +28,15 @@ DEFAULT_VAULT = {
 }
 
 
+def vault_status(ledger: Ledger, case_id: str) -> dict[str, int]:
+    """Current document counts for a case (shared by the Runtime and the dashboard)."""
+    out = {}
+    for doc, initial in DEFAULT_VAULT.items():
+        raw = ledger.kv_get(f"vault:{case_id}:{doc}")
+        out[doc] = int(raw) if raw is not None else initial
+    return out
+
+
 @dataclass
 class GateResult:
     allowed: bool
@@ -47,11 +56,7 @@ class Runtime:
         return f"vault:{self.case.id}:{doc}"
 
     def vault_status(self) -> dict[str, int]:
-        out = {}
-        for doc, initial in DEFAULT_VAULT.items():
-            raw = self.ledger.kv_get(self._vault_key(doc))
-            out[doc] = int(raw) if raw is not None else initial
-        return out
+        return vault_status(self.ledger, self.case.id)
 
     def vault_take(self, doc: str) -> bool:
         """Consume one copy of a document. Returns False if none remain."""

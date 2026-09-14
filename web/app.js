@@ -88,6 +88,13 @@ function render() {
     [s.in_motion, "in motion"],
     [s.hours_given_back + " h", "given back to the family"],
   ];
+  if (state.vault && state.vault_initial) {
+    const left = state.vault.certified_death_certificate;
+    const total = state.vault_initial.certified_death_certificate;
+    if (typeof left === "number" && left >= 0 && total > 0) {
+      stats.push([left + " of " + total, "certified copies in the vault"]);
+    }
+  }
   const row = $("stats-row");
   row.textContent = "";
   for (const [num, label] of stats) {
