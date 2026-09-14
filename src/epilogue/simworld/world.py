@@ -233,6 +233,7 @@ class SimWorld:
         subject: str,
         body: str,
         attachments: list[str],
+        payment_amount_usd: float = 0,
     ) -> str:
         """Epilogue sends something to an institution. Returns a human-readable receipt."""
         inst = INSTITUTIONS.get(institution_id)
@@ -256,7 +257,7 @@ class SimWorld:
         self.ledger.save_mail(outbound)
 
         stage = self.get_stage(inst.id, task_id)
-        reply = self._respond(inst, stage, channel, body, attachments)
+        reply = self._respond(inst, stage, channel, body, attachments, payment_amount_usd)
         if reply is None:
             return f"Delivered to {inst.name} via {channel}. No immediate acknowledgment."
         self.set_stage(inst.id, task_id, reply.next_stage)
@@ -283,9 +284,12 @@ class SimWorld:
     # -- behavior scripts --------------------------------------------------
 
     def _respond(
-        self, inst: Institution, stage: str, channel: str, body: str, attachments: list[str]
+        self, inst: Institution, stage: str, channel: str, body: str, attachments: list[str],
+        payment_amount_usd: float = 0,
     ) -> _Reply | None:
         handler = getattr(self, f"_script_{inst.script}")
+        if inst.script in ("ssa", "telecom"):
+            return handler(inst, stage, channel, body, attachments, payment_amount_usd)
         return handler(inst, stage, channel, body, attachments)
 
     def _script_bank(self, inst, stage, channel, body, attachments) -> _Reply | None:
@@ -355,7 +359,7 @@ class SimWorld:
             return self._script_credit_card(inst, "new", channel, body, ["death certificate copy"])
         return None
 
-    def _script_ssa(self, inst, stage, channel, body, attachments) -> _Reply | None:
+    def _script_ssa(self, inst, stage, channel, body, attachments, payment_amount_usd=0) -> _Reply | None:
         if stage == "new":
             return _Reply(
                 7,
@@ -369,8 +373,7 @@ class SimWorld:
                 "await_repayment",
             )
         if stage == "await_repayment":
-            lowered = body.lower()
-            if "repay" in lowered or "1,847" in lowered or "returned" in lowered or "enclosed" in lowered:
+            if payment_amount_usd == 1847:
                 return _Reply(
                     5,
                     "Repayment received — record closed",
@@ -578,7 +581,7 @@ class SimWorld:
             return self._script_airline(inst, "new", channel, body, ["death certificate copy"])
         return None
 
-    def _script_telecom(self, inst, stage, channel, body, attachments) -> _Reply | None:
+    def _script_telecom(self, inst, stage, channel, body, attachments, payment_amount_usd=0) -> _Reply | None:
         if stage == "new":
             return _Reply(
                 3,
@@ -586,8 +589,16 @@ class SimWorld:
                 "The line has been disconnected with the early-termination fee waived under our "
                 "bereavement policy. Final prorated bill: $19.20, payable by the estate. The number will "
                 "be held for 90 days should the family wish to port it.\n\n— ClearLine Wireless",
-                "done",
+                "awaiting_payment",
             )
+        if stage in ("awaiting_payment", "done"):
+            if payment_amount_usd == 19.20:
+                return _Reply(2, "Final payment received — zero balance",
+                              "The estate's final payment of $19.20 has been received. The line is closed "
+                              "and no further balance is due.\n\n— ClearLine Wireless", "paid")
+            return _Reply(2, "Final bill remains outstanding",
+                          "The line is closed. No payment has been received; the estate's final balance "
+                          "remains $19.20. Please remit the final payment.\n\n— ClearLine Wireless", "awaiting_payment")
         return None
 
     def _script_newspaper(self, inst, stage, channel, body, attachments) -> _Reply | None:

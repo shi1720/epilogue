@@ -218,3 +218,23 @@ def test_bureaus_preserve_certified_originals(runtime):
                     body="Please place the alert.", attachments=["death_certificate_copy"])
     assert "Delivered" in result
     assert runtime.vault_status()["certified_death_certificate"] == 5
+
+
+def test_repayment_requires_explicit_amount_and_survivor_approval(runtime):
+    task = TaskItem(case_id=runtime.case.id, title="Benefit repayment", category="government",
+                    institution_id="fed_benefits")
+    runtime.ledger.save_task(task)
+    runtime.world.set_stage('fed_benefits', task.id, 'await_repayment')
+    submit = _tool(build_case_tools(runtime), 'submit_to_institution')
+    args = dict(task_id=task.id, institution_id='fed_benefits', subject='Repayment of $1,847',
+                body='Please provide instructions to repay the $1,847 returned benefit.')
+    submit(**args)
+    assert runtime.world.get_stage('fed_benefits', task.id) == 'await_repayment'
+    assert 'BLOCKED' in submit(**args, moves_money_usd=1847)
+    assert runtime.world.get_stage('fed_benefits', task.id) == 'await_repayment'
+    runtime.ledger.save_decision(Decision(
+        case_id=runtime.case.id, task_id=task.id, question='Repay $1,847?', context='Return overpayment',
+        options=[DecisionOption(id='repay', label='Repay', consequence='Return funds', authorizes=True)],
+        status='resolved', resolution_option_id='repay', authorizes_amount_usd=1847))
+    assert 'Delivered' in submit(**args, moves_money_usd=1847)
+    assert runtime.world.get_stage('fed_benefits', task.id) == 'done'

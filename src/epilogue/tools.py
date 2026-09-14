@@ -211,7 +211,9 @@ def build_case_tools(rt: Runtime) -> list:
                 Certified copies are finite — use photocopies unless certified is
                 explicitly required.
             moves_money_usd: If this action moves, repays, or forfeits money,
-                the dollar amount. Be honest; the gate depends on it.
+                the dollar amount. A payment in this simulated world only happens
+                when this field is set; mentioning money in a letter sends no funds.
+                The gate requires explicit survivor authorization above their threshold.
         """
         attachments = attachments or []
         t = rt.ledger.get_task(task_id)
@@ -260,7 +262,8 @@ def build_case_tools(rt: Runtime) -> list:
                 )
         for doc in attachments:
             rt.vault_take(doc)
-        receipt = rt.world.submit(case_id, task_id, institution_id, channel, subject, body, attachments)
+        receipt = rt.world.submit(case_id, task_id, institution_id, channel, subject, body, attachments,
+                                  payment_amount_usd=moves_money_usd)
         if receipt.startswith("ERROR"):
             return receipt
         pb = (
