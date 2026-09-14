@@ -286,7 +286,18 @@ def build_case_tools(rt: Runtime) -> list:
             detail=body,
             task_id=task_id,
         )
-        return f"{receipt} {gate.reason} Follow-up auto-scheduled in {wait_days} days if no reply."
+        payment_note = ""
+        stage = rt.world.get_stage(institution_id, task_id)
+        due = 1847 if institution_id == "fed_benefits" and stage == "await_repayment" else (
+            19.20 if institution_id == "clearline_wireless" and stage == "awaiting_payment" else 0
+        )
+        if due:
+            payment_note = (
+                f" No funds were transferred; ${due:,.2f} remains due. To simulate paying this bill, "
+                "first obtain any survivor approval required by the gate, then submit with "
+                f"moves_money_usd={due}. A letter asking for instructions does not settle the balance."
+            )
+        return f"{receipt} {gate.reason} Follow-up auto-scheduled in {wait_days} days if no reply.{payment_note}"
 
     @tool
     def ask_survivor(
