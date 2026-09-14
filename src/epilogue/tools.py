@@ -225,6 +225,11 @@ def build_case_tools(rt: Runtime) -> list:
             )
         if t.institution_id and t.institution_id != institution_id:
             return "This institution does not match the matter. Open or use the correct matter first."
+        if inst.kind == "credit_bureau" and "certified_death_certificate" in attachments:
+            return (
+                "This simulated bureau accepts 'death_certificate_copy'. Nothing was sent. "
+                "Use that copy instead and preserve certified originals for the bank and insurer."
+            )
         # The destination's capabilities outrank model-supplied risk labels.
         if inst.kind == "digital":
             t.category, t.risk = "digital_legacy", "irreversible"

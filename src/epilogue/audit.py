@@ -70,6 +70,6 @@ class AuditHook:
             self.case_id,
             actor=self._actor(event),
             kind="tool_call",
-            summary=f"{name} failed: {event.exception}",
-            detail=_preview(getattr(event, "result", ""), 300),
+            summary=f"{name} could not complete; progress was retained.",
+            detail=f"Failure type: {type(event.exception).__name__}",
         )

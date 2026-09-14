@@ -33,6 +33,7 @@ def seed_preview(ledger: Ledger) -> Case:
         narrative="My dad, James Mitchell, passed away on August 30th…",
     )
     ledger.save_case(case)
+    ledger.kv_set("intake_planned", "true")
     start = date(2026, 9, 8)
     ledger.set_sim_today(start + timedelta(days=11))
 

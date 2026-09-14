@@ -58,7 +58,7 @@ async function setupFirebase() {
     import('https://www.gstatic.com/firebasejs/12.2.1/firebase-auth.js')
   ]);
   authSDK = sdk;
-  firebaseAuth = sdk.getAuth(appSDK.initializeApp(meta.firebase));
+  firebaseAuth = sdk.getAuth(appSDK.getApps().length ? appSDK.getApp() : appSDK.initializeApp(meta.firebase));
   await sdk.setPersistence(firebaseAuth, sdk.inMemoryPersistence);
 }
 
@@ -92,11 +92,12 @@ async function loadAccount() {
   $('account-btn').textContent = user ? (user.name?.split(' ')[0] || 'Your account') : 'Sign in · $3 included';
   $('account-btn').disabled = false;
 }
-$('account-btn').onclick = () => {
+function openAccount() {
   if (!user) return signInDialog();
   dialog('Your workspace', [el('p','',user.email || user.name), el('p','',`${money(state?.budget?.remaining_usd ?? meta.allowance_usd)} of your test allowance remains. Starting a new case does not refill it.`)],
     [{label:'Close',run:closeDialog}, ...(meta.auth_required ? [{label:'Sign out',run:async () => { try { await api('/api/logout', {}); feed?.close(); feed = null; user = null; state = null; clearViews(); closeDialog(); await loadAccount(); } catch(e) { showError(e); } }}] : [])], 'ACCOUNT');
-};
+}
+$('account-btn').onclick = openAccount;
 
 const CATEGORY_LABELS = {financial:'Money & accounts',subscriptions:'Subscriptions & services',utilities:'The house',government:'Government',insurance:'Insurance',identity:'Identity protection',benefits:'Money owed to the family',memorial:'Memorial',digital_legacy:'Photos, memories & digital life'};
 const STATUS_LABELS = {pending:'queued',in_progress:'working',waiting_response:'awaiting reply',needs_decision:'needs you',follow_up:'will chase',done:'settled',dismissed:'set aside'};
@@ -131,7 +132,7 @@ function render() {
     $('budget-fill').style.width = Math.min(100, 100 * b.remaining_usd / b.limit_usd) + '%';
     $('budget-detail').textContent = `${money(b.spent_usd)} used of ${money(b.limit_usd)} · ${b.requests} model requests` + (b.reserved_usd ? ' · request in progress' : '');
   }
-  const intake = !state.case || state.status === 'intake' || (!state.intake_complete && state.status !== 'idle');
+  const intake = !state.case || !state.intake_complete;
   $('intake-view').hidden = !intake; $('dashboard-view').hidden = intake;
   if (intake) {
     $('intake-progress').hidden = state.status === 'idle';
@@ -225,7 +226,9 @@ function appendActivity(event) {
   const eventKey = target.id + ':' + event.id;
   if (!event.summary || event.kind === 'hello' || seenActivity.has(eventKey)) return;
   if (event.id) seenActivity.add(eventKey);
-  const line = el('div'); line.append(el('span','actor',event.actor ? event.actor+' · ' : ''),document.createTextNode(event.summary));
+  const toolMessages = {get_matter:'Reviewing the next matter…', get_case_file:'Reviewing the case file…', get_playbook:'Checking the institution’s requirements…', list_matters:'Reviewing the plan…', consult_scribe:'Preparing a letter…', consult_advocate:'Looking for money owed to the family…', consult_sentinel:'Checking an identity protection signal…', submit_to_institution:'Checking and recording correspondence…', update_matter:'Saving progress…', ask_survivor:'Preparing a decision for you…', check_document_vault:'Checking the available documents…', search_benefit_records:'Looking for available benefits…', open_matter:'Adding a newly discovered matter…', current_date:'Checking the case clock…'};
+  const summary = event.kind === 'tool_call' ? toolMessages[event.summary.replace(/^→\s*/, '')] || 'Reviewing the next step…' : event.summary;
+  const line = el('div'); line.append(el('span','actor',event.actor ? event.actor+' · ' : ''),document.createTextNode(summary));
   target.append(line);
   while (target.childElementCount > 80) target.firstChild.remove(); target.scrollTop = target.scrollHeight;
 }
@@ -283,6 +286,8 @@ async function boot() {
     meta = await api('/api/meta');
     $('allowance-note').textContent = meta.preview ? 'Saved preview · no live model calls' : `${money(meta.allowance_usd)} of agent testing included per account. No payment details.`;
     await Promise.all([setupFirebase(),loadAccount()]);
+    $('account-btn').onclick = openAccount;
+    clearError(); updateControls();
     await refresh(); connectFeed();
   } catch(e) { $('account-btn').textContent='Retry connection';$('account-btn').disabled=false;$('account-btn').onclick=boot;showError(e); }
 }

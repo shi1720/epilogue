@@ -11,6 +11,7 @@ import os
 import pathlib
 import subprocess
 import tempfile
+import time
 import urllib.error
 import urllib.request
 
@@ -127,9 +128,18 @@ def deploy():
         config_path.write_text(json.dumps(hosting))
         run('firebase','deploy','--only','hosting','--project',PROJECT,'--config',str(config_path),'--non-interactive')
     url='https://'+chosen+'.web.app'
-    with urllib.request.urlopen(url+'/api/health',timeout=60) as response:
-        health=json.load(response)
-        assert health['version']=='0.2.0' and health['auth']=='firebase', health
+    # A newly created Hosting site can return 404 briefly while its first release propagates.
+    for attempt in range(12):
+        try:
+            with urllib.request.urlopen(url+'/api/health',timeout=30) as response:
+                health=json.load(response)
+            if health.get('version')=='0.2.0' and health.get('auth')=='firebase':
+                break
+            raise RuntimeError('The site is not yet serving the new authenticated runtime.')
+        except (urllib.error.URLError, TimeoutError, RuntimeError):
+            if attempt == 11:
+                raise
+            time.sleep(5)
     print('\nDeployed and verified: '+url,flush=True)
     print('Google sign-in • private case storage • $3 per account • $30 total host cap (configurable).')
 

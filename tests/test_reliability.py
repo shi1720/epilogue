@@ -95,6 +95,21 @@ def test_reset_never_refills_allowance(webapp):
     assert client.get('/api/state').json()['budget']['remaining_usd'] == 2.95
 
 
+def test_export_keeps_history_beyond_dashboard_window(webapp, case):
+    client, server, _ = webapp
+    from epilogue.domain import MailMessage
+    server.STATE.ledger.save_case(case)
+    for index in range(260):
+        server.STATE.ledger.record(case.id, 'Tester', 'status', f'Record {index}')
+        server.STATE.ledger.save_mail(MailMessage(case_id=case.id, direction='outbound',
+                                                institution_id='first_harbor_bank',
+                                                institution_name='First Harbor Bank',
+                                                subject=f'Letter {index}', body='Fictional test'))
+    exported = client.get('/api/export').json()
+    assert len(exported['audit']) == 260
+    assert len(exported['mail']) == 260
+
+
 def test_durable_lock_prevents_overlapping_workers(webapp):
     _, server, _ = webapp
     first = server.STATE

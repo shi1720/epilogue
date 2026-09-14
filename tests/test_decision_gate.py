@@ -202,3 +202,19 @@ def test_failed_submissions_never_burn_certified_copies(runtime):
     )
     assert "Unknown document" in out
     assert runtime.vault_status()["certified_death_certificate"] == 5
+
+
+def test_bureaus_preserve_certified_originals(runtime):
+    task = TaskItem(case_id=runtime.case.id, title="Credit alert", category="identity",
+                    institution_id="equifax_sim")
+    runtime.ledger.save_task(task)
+    submit = _tool(build_case_tools(runtime), "submit_to_institution")
+    result = submit(task_id=task.id, institution_id="equifax_sim", subject="Deceased alert",
+                    body="Please place the alert.", attachments=["certified_death_certificate"])
+    assert "Nothing was sent" in result
+    assert runtime.vault_status()["certified_death_certificate"] == 5
+    assert runtime.ledger.mail_for_case(runtime.case.id) == []
+    result = submit(task_id=task.id, institution_id="equifax_sim", subject="Deceased alert",
+                    body="Please place the alert.", attachments=["death_certificate_copy"])
+    assert "Delivered" in result
+    assert runtime.vault_status()["certified_death_certificate"] == 5

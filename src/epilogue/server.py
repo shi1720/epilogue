@@ -344,7 +344,11 @@ def get_mail(ctx: Annotated[AppState, Depends(context)]):
 
 @app.get("/api/export")
 def export(ctx: Annotated[AppState, Depends(context)]):
-    return JSONResponse({**state_payload(ctx), **get_mail(ctx)}, headers={"Content-Disposition": 'attachment; filename="epilogue-case.json"'})
+    payload = state_payload(ctx)
+    case = ctx.ledger.first_case()
+    payload['mail'] = [json.loads(m.model_dump_json()) for m in ctx.ledger.mail_for_case(case.id, limit=-1)] if case else []
+    payload['audit'] = [json.loads(e.model_dump_json()) for e in ctx.ledger.audit_for_case(case.id, limit=-1)] if case else []
+    return JSONResponse(payload, headers={"Content-Disposition": 'attachment; filename="epilogue-case.json"'})
 
 
 @app.get("/api/seed")

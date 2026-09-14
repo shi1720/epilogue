@@ -126,7 +126,7 @@ class Vigil:
                 "Vigil",
                 "status",
                 "A model-provider hiccup interrupted one matter — it will be retried next cycle.",
-                detail=str(exc)[:300],
+                detail=f"Provider failure type: {type(exc).__name__}",
             )
             return False
 
