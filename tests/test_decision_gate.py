@@ -44,7 +44,8 @@ def test_money_moves_need_an_explicit_amount_authorization(runtime):
 
     d2 = Decision(
         case_id=runtime.case.id, task_id=t.id, question="Repay $1,847 from the estate account?",
-        context="…", options=[DecisionOption(id="repay", label="Repay it", consequence="Closes the matter")],
+        context="…",
+        options=[DecisionOption(id="repay", label="Repay it", consequence="Closes the matter", authorizes=True)],
         status="resolved", resolution_option_id="repay", authorizes_amount_usd=1847.0,
     )
     runtime.ledger.save_decision(d2)
@@ -67,12 +68,44 @@ def test_gate_opens_after_survivor_decides(runtime):
         task_id=t.id,
         question="Export first?",
         context="…",
-        options=[DecisionOption(id="export", label="Export", consequence="Safe")],
+        options=[
+            DecisionOption(id="export", label="Export", consequence="Safe", authorizes=True),
+            DecisionOption(id="hold", label="Not yet", consequence="Wait"),
+        ],
         status="resolved",
         resolution_option_id="export",
     )
     runtime.ledger.save_decision(d)
     assert runtime.gate_check(t, "export then downgrade").allowed is True
+
+
+def test_a_no_keeps_the_gate_shut(runtime):
+    """A resolved decision is not an authorization: choosing 'hold' must leave
+    the gate closed — the exact failure mode the product exists to prevent."""
+    t = TaskItem(
+        case_id=runtime.case.id,
+        title="Photo library",
+        category="digital_legacy",
+        institution_id="pixelvault",
+        risk="irreversible",
+    )
+    runtime.ledger.save_task(t)
+    d = Decision(
+        case_id=runtime.case.id,
+        task_id=t.id,
+        question="Export first?",
+        context="…",
+        options=[
+            DecisionOption(id="export", label="Export", consequence="Safe", authorizes=True),
+            DecisionOption(id="hold", label="Hold — let me think", consequence="Nothing changes"),
+        ],
+        status="resolved",
+        resolution_option_id="hold",
+    )
+    runtime.ledger.save_decision(d)
+    gate = runtime.gate_check(t, "export then downgrade")
+    assert gate.allowed is False
+    assert "honor it" in gate.reason
 
 
 def test_submit_tool_enforces_gate_and_instructs_model(runtime):
@@ -94,8 +127,9 @@ def test_submit_tool_enforces_gate_and_instructs_model(runtime):
     assert "BLOCKED BY DECISION GATE" in out
     # No outbound mail was created; the world never heard about it.
     assert runtime.ledger.mail_for_case(runtime.case.id) == []
-    # And the matter now shows as needing the survivor.
-    assert runtime.ledger.get_task(t.id).status.value == "needs_decision"
+    # With no decision on file the matter is NOT parked as needs_decision —
+    # the Vigil keeps driving it until the Steward asks properly (no dead-ends).
+    assert runtime.ledger.get_task(t.id).status.value == "pending"
 
 
 def test_ask_survivor_creates_decision_and_dedupes(runtime):
@@ -108,7 +142,7 @@ def test_ask_survivor_creates_decision_and_dedupes(runtime):
         question="Keep the power on at the house?",
         context="The house is empty until it sells in spring.",
         options=[
-            {"id": "keep", "label": "Keep it on", "consequence": "~$60/mo, pipes protected"},
+            {"id": "keep", "label": "Keep it on", "consequence": "~$60/mo, pipes protected", "authorizes": True},
             {"id": "close", "label": "Shut it off", "consequence": "Saves money, risks the house"},
         ],
         recommendation="keep",

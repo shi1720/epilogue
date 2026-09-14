@@ -61,6 +61,9 @@
   <text x="505" y="466" font-size="12" fill="#726d5f" text-anchor="middle">memory lives in the ledger, not the context window</text>
   <path d="M 505 338 L 505 360" stroke="#5c574a" stroke-width="1.6" marker-end="url(#arrow)"/>
 
+  <!-- intake feeds the steward's ledger of matters -->
+  <path d="M 280 439 C 315 439 315 420 338 415" stroke="#5c574a" stroke-width="1.6" fill="none" marker-end="url(#arrow)"/>
+
   <!-- Triage -->
   <rect x="340" y="516" width="150" height="60" rx="8" fill="#e8efe9" stroke="#c6d4ca"/>
   <text x="415" y="540" font-size="13" fill="#26251e" text-anchor="middle" font-weight="600">Triage agent</text>

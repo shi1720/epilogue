@@ -136,6 +136,7 @@ def get_state() -> JSONResponse:
 
 @app.get("/api/mail")
 def get_mail() -> JSONResponse:
+    """Full correspondence file — consumed by the test suite and external tools."""
     case = STATE.ledger.first_case()
     if case is None:
         return JSONResponse({"mail": []})
@@ -235,9 +236,14 @@ def resolve_decision(decision_id: str, req: ResolveRequest) -> JSONResponse:
 
 @app.post("/api/reset")
 def reset() -> JSONResponse:
-    if STATE.status != "idle":
+    # Take the same busy lock the work cycles use, so a reset can never race a
+    # cycle that is between acquiring the lock and doing its work.
+    if STATE.status != "idle" or not STATE.busy.acquire(blocking=False):
         raise HTTPException(409, "Epilogue is mid-cycle; try again in a moment.")
-    STATE.ledger.reset()
+    try:
+        STATE.ledger.reset()
+    finally:
+        STATE.busy.release()
     STATE.announce("reset", "Case cleared.")
     return JSONResponse({"status": "reset"})
 

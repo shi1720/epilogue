@@ -202,6 +202,13 @@ class DecisionOption(BaseModel):
     id: str
     label: str
     consequence: str = Field(description="Plain-language outcome if this option is chosen")
+    authorizes: bool = Field(
+        default=False,
+        description=(
+            "True only if choosing this option permits Epilogue to proceed with the "
+            "blocked action. A 'hold' or 'decline' option must leave this False."
+        ),
+    )
 
 
 class Decision(BaseModel):

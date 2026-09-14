@@ -177,9 +177,9 @@ class Vigil:
             flag = f"decision_handled:{decision.id}"
             if self.ledger.kv_get(flag):
                 continue
-            self.ledger.kv_set(flag, "1")
             if runs >= self.max_steward_runs:
-                continue
+                continue  # not marked handled — the next cycle delivers this context
+            self.ledger.kv_set(flag, "1")
             chosen = next((o for o in decision.options if o.id == decision.resolution_option_id), None)
             runs += 1
             steward(
@@ -191,6 +191,21 @@ class Vigil:
             )
             if decision.task_id:
                 report.matters_touched.append(decision.task_id)
+
+        # 3.5 Reclaim orphans: a matter marked needs_decision with no decision on
+        # file would otherwise wait forever (nothing for the survivor to answer).
+        for task in self.ledger.tasks_for_case(case_id, status=TaskStatus.NEEDS_DECISION):
+            if (
+                self.ledger.open_decision_for_task(task.id) is None
+                and self.ledger.resolved_decision_for_task(task.id) is None
+            ):
+                task.status = TaskStatus.IN_PROGRESS
+                task.next_action_at = None
+                task.notes.append(
+                    f"[{self.ledger.sim_today()}] Reclaimed by the Vigil: marked needs_decision "
+                    "but no decision was on file."
+                )
+                self.ledger.save_task(task)
 
         # 4. Work what is due: fresh matters and follow-ups on quiet institutions.
         for task in self.ledger.due_tasks(case_id):

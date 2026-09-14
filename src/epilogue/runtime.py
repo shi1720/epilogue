@@ -76,16 +76,19 @@ class Runtime:
     def gate_check(self, task: TaskItem, action_summary: str, moves_money_usd: float = 0.0) -> GateResult:
         contract = self.case.contract
         level = contract.level_for(task.category)
-        approved = self.ledger.resolved_decision_for_task(task.id)
+        # Only a resolved decision whose CHOSEN option authorizes action opens the
+        # gate. "Hold" and "decline" answers are decisions too — they keep it shut.
+        approved = self.ledger.authorizing_decision_for_task(task.id)
 
         def blocked(why: str) -> GateResult:
             return GateResult(
                 allowed=False,
                 reason=(
                     f"BLOCKED BY DECISION GATE: {why} "
-                    f"No approved decision is on file for this matter. Use the ask_survivor tool to "
-                    f"surface a clear decision (with options and your recommendation), then wait. Do "
-                    f"NOT retry this action until the survivor has answered."
+                    f"No authorizing decision is on file for this matter. If the survivor has not "
+                    f"been asked, use the ask_survivor tool to surface a clear decision (with "
+                    f"options and your recommendation), then stand down. If they answered with a "
+                    f"hold or a no, honor it: reschedule or dismiss the matter — do NOT retry."
                 ),
             )
 
@@ -116,7 +119,7 @@ class Runtime:
         stats = self.ledger.stats(c.id)
         contract_lines = [f"  - {cat}: {lvl.value}" for cat, lvl in c.contract.defaults.items()]
         vault_lines = [
-            f"  - {doc}: {'unlimited' if n == -1 else n + 0}" for doc, n in self.vault_status().items()
+            f"  - {doc}: {'unlimited' if n == -1 else n}" for doc, n in self.vault_status().items()
         ]
         return "\n".join(
             [

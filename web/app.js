@@ -277,11 +277,16 @@ $("begin-btn").onclick = async () => {
   if (!narrative) return;
   $("begin-btn").disabled = true;
   $("intake-progress").hidden = false;
-  await api("/api/case", {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ narrative, documents }),
-  });
+  try {
+    await api("/api/case", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ narrative, documents }),
+    });
+  } catch (err) {
+    $("intake-status").textContent = "Something went wrong starting the case — please try again.";
+    $("begin-btn").disabled = false;
+  }
 };
 
 /* ---------------- clock ---------------- */

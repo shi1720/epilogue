@@ -113,7 +113,7 @@ An agent in this domain touches real authority and real PII, so the boundaries a
 
 ```bash
 pip install -e ".[dev]"
-pytest            # 24 tests, fully offline, < 1s
+pytest            # 29 tests, fully offline, < 2s
 ```
 
 The suite drives the **real Strands event loop** with a deterministic `ScriptedModel` (a `strands.models.Model` implementation that replays scripted tool calls and structured outputs). It covers the ledger, the simulated institutions, the Decision Gate (blocked → ask → approved → allowed), vault depletion of certified death certificates, and a full matter lifecycle: intake → plan → first contact → document demand → certified copy → settled.

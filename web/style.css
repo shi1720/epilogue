@@ -109,6 +109,15 @@ button.ghost {
 }
 button.ghost:hover { color: var(--ink); }
 
+.privacy-note {
+  margin: 20px 0 0;
+  padding-top: 16px;
+  border-top: 1px solid var(--line);
+  color: var(--faint);
+  font-size: 12.5px;
+  line-height: 1.5;
+}
+
 .intake-progress { margin-top: 28px; }
 
 .pulse-line { display: flex; align-items: center; gap: 10px; color: var(--muted); font-size: 14px; }
@@ -339,7 +348,14 @@ button.ghost:hover { color: var(--ink); }
 }
 .activity-panel .side-title { margin: 0 0 8px; }
 
-.activity-feed { overflow-y: auto; font-size: 12.5px; color: var(--muted); }
+.activity-feed {
+  overflow-y: auto;
+  font-size: 12.5px;
+  color: var(--muted);
+  mask-image: linear-gradient(to bottom, black calc(100% - 22px), transparent);
+  -webkit-mask-image: linear-gradient(to bottom, black calc(100% - 22px), transparent);
+  padding-bottom: 10px;
+}
 .activity-feed div { padding: 2.5px 0; border-bottom: 1px dashed #efece3; animation: fadein 0.3s ease; }
 .activity-feed .actor { color: var(--sage); font-weight: 600; }
 .activity-feed .clock-mark { color: var(--faint); text-align: center; letter-spacing: 0.06em; font-size: 11.5px; }

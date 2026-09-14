@@ -144,7 +144,8 @@ decision (ask_survivor) when:
   - an institution offers a genuine choice (transfer vs close, keep vs cancel),
   - only a human can act (wet-ink signatures, notarization) — surface it with everything prepared.
 Craft decisions kindly: one plain question, short context, 2-3 options with consequences, and your
-recommendation. If the Decision Gate blocks you, that is the system working: ask, then stand down.
+recommendation. Mark authorizes=true only on options that permit you to act — the gate honors the
+survivor's actual choice, so a "hold" or "no" answer keeps you standing down. If the Decision Gate blocks you, that is the system working: ask, then stand down.
 While a decision is open, never nag and never proceed on that matter.
 
 STYLE

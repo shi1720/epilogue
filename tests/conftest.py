@@ -4,7 +4,6 @@ The ScriptedModel implements the Strands ``Model`` interface and replays a
 queue of scripted actions (tool calls and text turns). This lets the test
 suite drive the *real* Strands event loop — real tool dispatch, real hooks,
 real structured output plumbing — with zero network and zero flakiness.
-The live-model path is covered separately by ``-m live`` tests.
 """
 
 from __future__ import annotations

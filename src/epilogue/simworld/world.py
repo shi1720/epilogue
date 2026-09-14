@@ -16,6 +16,7 @@ same discipline you'd use to evaluate any autonomous system.
 from __future__ import annotations
 
 import json
+import threading
 from dataclasses import dataclass, field
 from datetime import date, timedelta
 
@@ -106,6 +107,14 @@ def _has_death_cert(attachments: list[str]) -> bool:
     return "death" in joined and "cert" in joined
 
 
+def _has_certified_cert(attachments: list[str]) -> bool:
+    """Institutions that demand a CERTIFIED death certificate mean it — a
+    photocopy comes back with a reminder, which is exactly what makes the
+    finite certified copies in the vault a real constraint."""
+    joined = " ".join(attachments).lower()
+    return "certified" in joined and "death" in joined and "cert" in joined
+
+
 def _is_written_letter(channel: str) -> bool:
     return channel in ("letter", "mailed_letter")
 
@@ -134,6 +143,8 @@ class ScheduledDelivery:
 class SimWorld:
     """Deterministic behavior engine + scheduled delivery queue."""
 
+    _queue_lock = threading.Lock()  # guards the shared delivery queue's read-modify-write
+
     def __init__(self, ledger: Ledger) -> None:
         self.ledger = ledger
 
@@ -161,12 +172,17 @@ class SimWorld:
         self.ledger.kv_set("sim:queue", json.dumps(queue))
 
     def schedule(self, case_id: str, delivery: ScheduledDelivery) -> None:
-        queue = self._queue()
-        queue.append({"case_id": case_id, **delivery.__dict__})
-        self._save_queue(queue)
+        with self._queue_lock:
+            queue = self._queue()
+            queue.append({"case_id": case_id, **delivery.__dict__})
+            self._save_queue(queue)
 
     def deliver_due(self, case_id: str) -> list[MailMessage]:
         """Move every due scheduled reply into the case inbox. Called by the Vigil each cycle."""
+        with self._queue_lock:
+            return self._deliver_due_locked(case_id)
+
+    def _deliver_due_locked(self, case_id: str) -> list[MailMessage]:
         today = self.ledger.sim_today()
         queue = self._queue()
         keep, delivered = [], []
@@ -273,7 +289,17 @@ class SimWorld:
         return handler(inst, stage, channel, body, attachments)
 
     def _script_bank(self, inst, stage, channel, body, attachments) -> _Reply | None:
-        if stage == "new" and not _has_death_cert(attachments):
+        if _has_death_cert(attachments) and not _has_certified_cert(attachments):
+            return _Reply(
+                3,
+                "Photocopies are not accepted",
+                "Thank you for the documentation. However, a photocopy of the death certificate "
+                "cannot be accepted for estate actions; we require a CERTIFIED copy issued by the "
+                "vital records office, together with a signed letter of instruction.\n\n— Estate "
+                f"Services, {inst.name}",
+                "awaiting_docs",
+            )
+        if stage == "new" and not _has_certified_cert(attachments):
             return _Reply(
                 3,
                 "Additional documentation required",
@@ -285,7 +311,7 @@ class SimWorld:
                 f"{inst.name}",
                 "awaiting_docs",
             )
-        if stage in ("new", "awaiting_docs") and _has_death_cert(attachments):
+        if stage in ("new", "awaiting_docs") and _has_certified_cert(attachments):
             return _Reply(
                 4,
                 "Accounts restricted — date-of-death balance letter enclosed",
@@ -492,7 +518,16 @@ class SimWorld:
                 "within 7 business days.\n\n— Claims, Beacon Mutual Life",
                 "awaiting_signature",
             )
-        if stage == "awaiting_signature" and _has_death_cert(attachments):
+        if stage == "awaiting_signature" and _has_death_cert(attachments) and not _has_certified_cert(attachments):
+            return _Reply(
+                3,
+                "Certified copy required to disburse",
+                "We received the signed form. Disbursement additionally requires a CERTIFIED copy of "
+                "the death certificate; a photocopy cannot be accepted for a claim of this size.\n\n"
+                "— Claims, Beacon Mutual Life",
+                "awaiting_signature",
+            )
+        if stage == "awaiting_signature" and _has_certified_cert(attachments):
             return _Reply(
                 7,
                 "Claim approved — benefit disbursed",

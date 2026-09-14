@@ -48,7 +48,7 @@ You tell Epilogue what happened in your own words and paste in the shoebox: stat
 - **Model-agnostic** via Strands' provider abstraction: Amazon Bedrock (Claude Sonnet) by default; Anthropic/OpenAI/Ollama with one env var.
 - **A deterministic simulated world**: 15 fictional institutions as scripted state machines that faithfully reproduce document demands, non-replies, clawbacks, bereavement policies, and a fraud attempt whose outcome genuinely depends on whether the agent placed the bureau alerts in time. The world is deterministic so the *agent's* judgment is what's being demonstrated — and one clean seam swaps it for real channels (email, print-and-mail APIs, portals) in production.
 
-**Stack**: Python 3.10+, Strands Agents, FastAPI + SSE, SQLite, vanilla-JS dashboard (no build step), pytest with a `ScriptedModel` that drives the real Strands event loop offline (24 tests, <1s).
+**Stack**: Python 3.10+, Strands Agents, FastAPI + SSE, SQLite, vanilla-JS dashboard (no build step), pytest with a `ScriptedModel` that drives the real Strands event loop offline (29 tests, <2s).
 
 ## Challenges we ran into
 
@@ -88,4 +88,4 @@ python -m venv .venv && source .venv/bin/activate && pip install -e .
 epilogue demo    # → http://127.0.0.1:8000  → "Use the demo case" → Begin
 ```
 
-Offline options: `pytest` (24 tests, no credentials) and a seeded UI preview (`python scripts/preview_state.py` — see README).
+Offline options: `pytest` (29 tests, no credentials) and a seeded UI preview (`python scripts/preview_state.py` — see README).

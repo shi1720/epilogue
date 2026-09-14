@@ -102,8 +102,10 @@ def build_case_tools(rt: Runtime) -> list:
         approved = rt.ledger.resolved_decision_for_task(t.id)
         if approved:
             opt = next((o for o in approved.options if o.id == approved.resolution_option_id), None)
+            authorizes = bool(opt and opt.authorizes)
             lines.append(
                 f"  SURVIVOR DECISION ON FILE: chose '{opt.label if opt else approved.resolution_option_id}'"
+                + (" (authorizes action)" if authorizes else " (does NOT authorize action — honor it)")
                 + (f" — note: {approved.resolution_note}" if approved.resolution_note else "")
             )
         pending = rt.ledger.open_decision_for_task(t.id)
@@ -223,8 +225,12 @@ def build_case_tools(rt: Runtime) -> list:
             )
         gate = rt.gate_check(t, f"submit to {institution_id}: {subject}", moves_money_usd)
         if not gate.allowed:
-            t.status = TaskStatus.NEEDS_DECISION
-            rt.ledger.save_task(t)
+            # Only park the matter as needs_decision when a decision actually exists
+            # for the survivor to answer; otherwise the Vigil keeps driving it until
+            # the Steward asks properly (no silent dead-ends).
+            if rt.ledger.open_decision_for_task(t.id) is not None:
+                t.status = TaskStatus.NEEDS_DECISION
+                rt.ledger.save_task(t)
             return gate.reason
         # Validate the whole attachment list BEFORE consuming anything: certified
         # copies are finite, and a failed send must never burn one.
@@ -287,8 +293,10 @@ def build_case_tools(rt: Runtime) -> list:
             question: The decision, phrased warmly and plainly in one sentence.
             context: 2-4 sentences of what Epilogue knows, so the survivor can
                 decide in under a minute. Plain language, no jargon.
-            options: 2-3 options, each with an id (short slug), a label, and a
-                one-line consequence.
+            options: 2-3 options, each with an id (short slug), a label, a one-line
+                consequence, and authorizes (true ONLY for options that permit
+                Epilogue to proceed with the action; a 'hold' or 'no' option must
+                have authorizes=false — the Decision Gate honors this exactly).
             recommendation: The option id Epilogue gently recommends, if any.
             urgency: whenever | this_week | today.
             authorizes_amount_usd: If the decision is about moving/repaying/forfeiting
@@ -299,6 +307,13 @@ def build_case_tools(rt: Runtime) -> list:
         existing = rt.ledger.open_decision_for_task(task_id)
         if existing:
             return f"A decision is already open for this matter ({existing.id}). Do not duplicate it."
+        options = [DecisionOption.model_validate(o) for o in options]
+        if not any(o.authorizes for o in options):
+            return (
+                "Nothing was asked: none of the options has authorizes=true, so approval could "
+                "never unblock the matter. Mark authorizes=true on each option that permits "
+                "Epilogue to proceed (and leave it false on hold/decline options), then ask again."
+            )
         t = rt.ledger.get_task(task_id)
         decision = Decision(
             case_id=case_id,

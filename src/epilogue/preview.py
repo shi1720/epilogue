@@ -71,7 +71,7 @@ def seed_preview(ledger: Ledger) -> Case:
                  "viewable either way. Nothing will ever be deleted without you."),
         options=[
             DecisionOption(id="export", label="Export everything, then stop the billing",
-                           consequence="Photos preserved forever; no renewal charge"),
+                           consequence="Photos preserved forever; no renewal charge", authorizes=True),
             DecisionOption(id="keep", label="Keep the plan running for now",
                            consequence="$119.88/year continues; decide later"),
         ],
@@ -87,7 +87,7 @@ def seed_preview(ledger: Ledger) -> Case:
         authorizes_amount_usd=1847.0,
         options=[
             DecisionOption(id="repay", label="Yes, repay it from the estate account",
-                           consequence="Closes the matter; no interest accrues"),
+                           consequence="Closes the matter; no interest accrues", authorizes=True),
             DecisionOption(id="hold", label="Hold — I want to ask the estate attorney",
                            consequence="I'll pause and re-raise it in a week"),
         ],

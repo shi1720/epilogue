@@ -48,6 +48,7 @@ def test_steward_hits_gate_then_asks_survivor_then_proceeds(runtime, ledger):
                             "id": "export",
                             "label": "Export everything, then stop the billing",
                             "consequence": "Photos safe forever, no renewal charge",
+                            "authorizes": True,
                         },
                         {
                             "id": "keep",

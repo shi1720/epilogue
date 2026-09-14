@@ -75,7 +75,7 @@ Between work cycles, the agents remember *nothing*. All state — matters, notes
 
 ### 6. Test the loop, not the model
 
-I implemented Strands' `Model` interface as a deterministic `ScriptedModel` that replays tool calls and structured outputs through the **real** event loop. The CI suite (24 tests, under a second, zero credentials) proves the gate blocks, the vault decrements certified copies, the world's gym ignores portal cancellations, and a full matter lifecycle settles. The live model then only has to supply judgment — the machine around it is already proven.
+I implemented Strands' `Model` interface as a deterministic `ScriptedModel` that replays tool calls and structured outputs through the **real** event loop. The CI suite (29 tests, in about a second, zero credentials) proves the gate blocks, the vault decrements certified copies, the world's gym ignores portal cancellations, and a full matter lifecycle settles. The live model then only has to supply judgment — the machine around it is already proven.
 
 ## The part nobody warns you about: time
 

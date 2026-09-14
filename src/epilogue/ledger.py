@@ -222,6 +222,19 @@ class Ledger:
                 return dec
         return None
 
+    def authorizing_decision_for_task(self, task_id: str) -> Decision | None:
+        """The most recent resolved decision whose CHOSEN option authorizes action.
+
+        A survivor who answered "hold — let me ask the attorney" has decided, but
+        has not authorized anything; the Decision Gate must stay closed. Only the
+        chosen option's ``authorizes`` flag opens it.
+        """
+        decision = self.resolved_decision_for_task(task_id)
+        if decision is None:
+            return None
+        chosen = next((o for o in decision.options if o.id == decision.resolution_option_id), None)
+        return decision if (chosen is not None and chosen.authorizes) else None
+
     # -- mail --------------------------------------------------------------
 
     def save_mail(self, mail: MailMessage) -> MailMessage:

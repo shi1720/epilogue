@@ -82,3 +82,18 @@ def test_unknown_institution_is_reported_not_raised(ledger, case):
     world = SimWorld(ledger)
     out = _submit(world, case, "t4", "bank_of_narnia")
     assert out.startswith("ERROR: unknown institution")
+
+
+def test_bank_rejects_photocopies_certified_only(ledger, case):
+    """'Photocopies are not accepted' is enforced, so the finite certified
+    copies in the vault are a real constraint, not a UI ornament."""
+    world = SimWorld(ledger)
+    _submit(world, case, "t8", "first_harbor_bank", attachments=["death_certificate_copy"])
+    ledger.advance_days(3)
+    delivered = world.deliver_due(case.id)
+    assert delivered and "Photocopies are not accepted" in delivered[0].subject
+    assert world.get_stage("first_harbor_bank", "t8") != "done"
+    _submit(world, case, "t8", "first_harbor_bank", attachments=["certified_death_certificate"])
+    ledger.advance_days(4)
+    delivered = world.deliver_due(case.id)
+    assert delivered and "date-of-death balance" in delivered[0].subject.lower()
