@@ -1,0 +1,148 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1240" height="880" viewBox="0 0 1240 880" font-family="-apple-system, 'Segoe UI', Helvetica, Arial, sans-serif">
+  <defs>
+    <marker id="arrow" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+      <path d="M 0 0 L 10 5 L 0 10 z" fill="#5c574a"/>
+    </marker>
+    <marker id="arrowAmber" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+      <path d="M 0 0 L 10 5 L 0 10 z" fill="#b07d2e"/>
+    </marker>
+  </defs>
+
+  <rect width="1240" height="880" fill="#f6f3ec"/>
+  <text x="40" y="46" font-family="Georgia, serif" font-size="28" fill="#26251e">Epilogue<tspan fill="#b07d2e">.</tspan>  <tspan font-size="15" fill="#726d5f" font-family="-apple-system, 'Segoe UI', sans-serif">  architecture — a Strands Agents system for after-loss administration</tspan></text>
+
+  <!-- ============ BAND 1: THE FAMILY ============ -->
+  <rect x="30" y="70" width="1180" height="120" rx="12" fill="#efece3" stroke="#e0dacb"/>
+  <text x="50" y="94" font-size="12" letter-spacing="2" fill="#a49e8d">THE FAMILY</text>
+
+  <rect x="60" y="106" width="220" height="66" rx="10" fill="#fffdf8" stroke="#d8d2c2"/>
+  <text x="170" y="134" font-size="15" fill="#26251e" text-anchor="middle" font-weight="600">Sarah — the survivor</text>
+  <text x="170" y="154" font-size="12" fill="#726d5f" text-anchor="middle">one intake, then only real decisions</text>
+
+  <rect x="360" y="106" width="380" height="66" rx="10" fill="#fffdf8" stroke="#d8d2c2"/>
+  <text x="550" y="130" font-size="15" fill="#26251e" text-anchor="middle" font-weight="600">Dashboard  ·  FastAPI + SSE live feed</text>
+  <text x="550" y="150" font-size="12" fill="#726d5f" text-anchor="middle">decision inbox · “handled quietly” timeline · weekly note</text>
+  <text x="550" y="166" font-size="12" fill="#726d5f" text-anchor="middle">full audit trail — every action, receipts included</text>
+
+  <path d="M 280 139 L 358 139" stroke="#5c574a" stroke-width="1.6" marker-end="url(#arrow)" marker-start="url(#arrow)"/>
+
+  <!-- ============ BAND 2: EPILOGUE ============ -->
+  <rect x="30" y="210" width="1180" height="470" rx="12" fill="#fbf9f3" stroke="#e0dacb"/>
+  <text x="50" y="234" font-size="12" letter-spacing="2" fill="#a49e8d">EPILOGUE — STRANDS AGENTS SDK ON AWS</text>
+
+  <!-- Intake pipeline (left) -->
+  <rect x="55" y="250" width="250" height="264" rx="10" fill="#fffdf8" stroke="#d8d2c2"/>
+  <text x="180" y="274" font-size="13" fill="#3e5c50" text-anchor="middle" font-weight="600">INTAKE — typed pipeline</text>
+  <rect x="80" y="288" width="200" height="46" rx="8" fill="#e8efe9" stroke="#c6d4ca"/>
+  <text x="180" y="307" font-size="13" fill="#26251e" text-anchor="middle" font-weight="600">Intake Reader</text>
+  <text x="180" y="324" font-size="11" fill="#726d5f" text-anchor="middle">narrative → IntakeProfile</text>
+  <rect x="80" y="352" width="200" height="46" rx="8" fill="#e8efe9" stroke="#c6d4ca"/>
+  <text x="180" y="371" font-size="13" fill="#26251e" text-anchor="middle" font-weight="600">Archivist</text>
+  <text x="180" y="388" font-size="11" fill="#726d5f" text-anchor="middle">documents → AccountInventory</text>
+  <rect x="80" y="416" width="200" height="46" rx="8" fill="#e8efe9" stroke="#c6d4ca"/>
+  <text x="180" y="435" font-size="13" fill="#26251e" text-anchor="middle" font-weight="600">Planner</text>
+  <text x="180" y="452" font-size="11" fill="#726d5f" text-anchor="middle">inventory × playbooks → TaskPlan</text>
+  <path d="M 180 334 L 180 350" stroke="#5c574a" stroke-width="1.6" marker-end="url(#arrow)"/>
+  <path d="M 180 398 L 180 414" stroke="#5c574a" stroke-width="1.6" marker-end="url(#arrow)"/>
+  <text x="180" y="490" font-size="11.5" fill="#726d5f" text-anchor="middle">structured output at every stage —</text>
+  <text x="180" y="505" font-size="11.5" fill="#726d5f" text-anchor="middle">Pydantic models, consumed programmatically</text>
+
+  <!-- Vigil + Steward (center) -->
+  <rect x="340" y="250" width="330" height="88" rx="10" fill="#3e5c50"/>
+  <text x="505" y="278" font-size="15" fill="#ffffff" text-anchor="middle" font-weight="600">The Vigil — background loop</text>
+  <text x="505" y="298" font-size="12" fill="#cfe0d5" text-anchor="middle">wakes on a cadence · delivers due mail · triages replies</text>
+  <text x="505" y="315" font-size="12" fill="#cfe0d5" text-anchor="middle">resumes unblocked matters · chases silence · weekly note</text>
+
+  <rect x="340" y="362" width="330" height="128" rx="10" fill="#fffdf8" stroke="#3e5c50" stroke-width="1.6"/>
+  <text x="505" y="388" font-size="16" fill="#26251e" text-anchor="middle" font-weight="600">Steward — orchestrator agent</text>
+  <text x="505" y="410" font-size="12" fill="#726d5f" text-anchor="middle">10 custom tools: case file · playbooks · matter ledger</text>
+  <text x="505" y="427" font-size="12" fill="#726d5f" text-anchor="middle">correspondence · document vault · ask_survivor</text>
+  <text x="505" y="449" font-size="12" fill="#726d5f" text-anchor="middle">specialists mounted via Agent.as_tool() · stateless —</text>
+  <text x="505" y="466" font-size="12" fill="#726d5f" text-anchor="middle">memory lives in the ledger, not the context window</text>
+  <path d="M 505 338 L 505 360" stroke="#5c574a" stroke-width="1.6" marker-end="url(#arrow)"/>
+
+  <!-- Triage -->
+  <rect x="340" y="516" width="150" height="60" rx="8" fill="#e8efe9" stroke="#c6d4ca"/>
+  <text x="415" y="540" font-size="13" fill="#26251e" text-anchor="middle" font-weight="600">Triage agent</text>
+  <text x="415" y="557" font-size="11" fill="#726d5f" text-anchor="middle">inbound mail → TriageResult</text>
+
+  <!-- Decision gate -->
+  <rect x="520" y="516" width="150" height="60" rx="8" fill="#f6ecd9" stroke="#b07d2e" stroke-width="1.6"/>
+  <text x="595" y="538" font-size="13" fill="#26251e" text-anchor="middle" font-weight="600">DECISION GATE</text>
+  <text x="595" y="554" font-size="10.5" fill="#726d5f" text-anchor="middle">autonomy contract, enforced</text>
+  <text x="595" y="568" font-size="10.5" fill="#726d5f" text-anchor="middle">in code — not in the prompt</text>
+  <path d="M 595 490 L 595 514" stroke="#b07d2e" stroke-width="1.8" marker-end="url(#arrowAmber)"/>
+
+  <!-- Specialists (right) -->
+  <rect x="705" y="250" width="240" height="240" rx="10" fill="#fffdf8" stroke="#d8d2c2"/>
+  <text x="825" y="274" font-size="13" fill="#3e5c50" text-anchor="middle" font-weight="600">SPECIALISTS — agents as tools</text>
+  <rect x="725" y="288" width="200" height="42" rx="8" fill="#eef1ec" stroke="#d6dcd2"/>
+  <text x="825" y="306" font-size="13" fill="#26251e" text-anchor="middle" font-weight="600">Scribe</text>
+  <text x="825" y="322" font-size="11" fill="#726d5f" text-anchor="middle">institution-ready letters</text>
+  <rect x="725" y="340" width="200" height="42" rx="8" fill="#eef1ec" stroke="#d6dcd2"/>
+  <text x="825" y="358" font-size="13" fill="#26251e" text-anchor="middle" font-weight="600">Advocate</text>
+  <text x="825" y="374" font-size="11" fill="#726d5f" text-anchor="middle">finds money the family is owed</text>
+  <rect x="725" y="392" width="200" height="42" rx="8" fill="#eef1ec" stroke="#d6dcd2"/>
+  <text x="825" y="410" font-size="13" fill="#26251e" text-anchor="middle" font-weight="600">Sentinel</text>
+  <text x="825" y="426" font-size="11" fill="#726d5f" text-anchor="middle">“ghosting” fraud assessment</text>
+  <text x="825" y="462" font-size="11.5" fill="#726d5f" text-anchor="middle">each with its own system prompt;</text>
+  <text x="825" y="477" font-size="11.5" fill="#726d5f" text-anchor="middle">Advocate carries its own search tool</text>
+  <path d="M 670 420 L 703 380" stroke="#5c574a" stroke-width="1.6" marker-end="url(#arrow)" marker-start="url(#arrow)"/>
+
+  <!-- Ledger + playbooks (far right) -->
+  <rect x="980" y="250" width="205" height="150" rx="10" fill="#26251e"/>
+  <text x="1082" y="278" font-size="14" fill="#f2efe6" text-anchor="middle" font-weight="600">Task Ledger — SQLite</text>
+  <text x="1082" y="300" font-size="11.5" fill="#b9b29c" text-anchor="middle">the system of record:</text>
+  <text x="1082" y="317" font-size="11.5" fill="#b9b29c" text-anchor="middle">matters · decisions · mail</text>
+  <text x="1082" y="334" font-size="11.5" fill="#b9b29c" text-anchor="middle">audit trail (Strands hooks)</text>
+  <text x="1082" y="351" font-size="11.5" fill="#b9b29c" text-anchor="middle">document vault · case clock</text>
+  <text x="1082" y="375" font-size="11" fill="#8d8770" text-anchor="middle">S3/DynamoDB in production</text>
+
+  <rect x="980" y="420" width="205" height="70" rx="10" fill="#fffdf8" stroke="#d8d2c2"/>
+  <text x="1082" y="446" font-size="13.5" fill="#26251e" text-anchor="middle" font-weight="600">Playbooks</text>
+  <text x="1082" y="464" font-size="11" fill="#726d5f" text-anchor="middle">domain knowledge: steps, required</text>
+  <text x="1082" y="479" font-size="11" fill="#726d5f" text-anchor="middle">documents, traps, response times</text>
+
+  <text x="1082" y="510" font-size="11.5" fill="#726d5f" text-anchor="middle">read and written by every agent,</text>
+  <text x="1082" y="525" font-size="11.5" fill="#726d5f" text-anchor="middle">the Vigil, and the dashboard</text>
+
+  <!-- providers + deployment strips (right half; the left lane is for world traffic) -->
+  <rect x="705" y="596" width="480" height="30" rx="8" fill="#efece3" stroke="#e0dacb"/>
+  <text x="722" y="616" font-size="11.5" fill="#26251e"><tspan font-weight="600">Models (Strands abstraction):</tspan><tspan fill="#726d5f"> Bedrock Claude (default) · Anthropic · OpenAI · Ollama</tspan></text>
+  <rect x="705" y="632" width="480" height="30" rx="8" fill="#efece3" stroke="#e0dacb"/>
+  <text x="722" y="652" font-size="11.5" fill="#26251e"><tspan font-weight="600">Deploy:</tspan><tspan fill="#726d5f"> local / Docker · Amazon Bedrock AgentCore Runtime + EventBridge heartbeat</tspan></text>
+
+  <!-- ============ BAND 3: OUTSIDE WORLD ============ -->
+  <rect x="30" y="700" width="1180" height="150" rx="12" fill="#efece3" stroke="#e0dacb"/>
+  <text x="50" y="724" font-size="12" letter-spacing="2" fill="#a49e8d">THE OUTSIDE WORLD</text>
+
+  <g font-size="12.5" fill="#26251e" text-anchor="middle" font-weight="600">
+    <rect x="60"  y="740" width="170" height="52" rx="8" fill="#fffdf8" stroke="#d8d2c2"/>
+    <text x="145" y="762">Banks &amp; cards</text>
+    <text x="145" y="779" font-size="11" fill="#726d5f" font-weight="400">demand certified docs</text>
+    <rect x="250" y="740" width="170" height="52" rx="8" fill="#fffdf8" stroke="#d8d2c2"/>
+    <text x="335" y="762">Benefits agency</text>
+    <text x="335" y="779" font-size="11" fill="#726d5f" font-weight="400">claws back final payment</text>
+    <rect x="440" y="740" width="170" height="52" rx="8" fill="#fffdf8" stroke="#d8d2c2"/>
+    <text x="525" y="762">Credit bureaus</text>
+    <text x="525" y="779" font-size="11" fill="#726d5f" font-weight="400">deceased alerts, fraud</text>
+    <rect x="630" y="740" width="170" height="52" rx="8" fill="#fffdf8" stroke="#d8d2c2"/>
+    <text x="715" y="762">Subscriptions</text>
+    <text x="715" y="779" font-size="11" fill="#726d5f" font-weight="400">gyms ignore portals…</text>
+    <rect x="820" y="740" width="170" height="52" rx="8" fill="#fffdf8" stroke="#d8d2c2"/>
+    <text x="905" y="762">Insurers &amp; utilities</text>
+    <text x="905" y="779" font-size="11" fill="#726d5f" font-weight="400">forms, signatures, choices</text>
+  </g>
+  <text x="1105" y="758" font-size="11.5" fill="#726d5f" text-anchor="middle">dev: deterministic simworld</text>
+  <text x="1105" y="774" font-size="11.5" fill="#726d5f" text-anchor="middle">prod: email · print-mail APIs</text>
+  <text x="1105" y="790" font-size="11.5" fill="#726d5f" text-anchor="middle">· partner portals</text>
+
+  <!-- cross-band arrows -->
+  <path d="M 550 190 C 550 200 550 200 550 208" stroke="#5c574a" stroke-width="1.6" marker-end="url(#arrow)" marker-start="url(#arrow)"/>
+  <path d="M 595 578 L 595 698" stroke="#b07d2e" stroke-width="1.8" marker-end="url(#arrowAmber)"/>
+  <text x="612" y="628" font-size="11" fill="#b07d2e">outward actions</text>
+  <text x="612" y="642" font-size="11" fill="#b07d2e">pass the gate</text>
+  <path d="M 415 698 L 415 578" stroke="#5c574a" stroke-width="1.6" marker-end="url(#arrow)"/>
+  <text x="308" y="634" font-size="11" fill="#726d5f">replies,</text>
+  <text x="308" y="648" font-size="11" fill="#726d5f">days later</text>
+</svg>
