@@ -51,6 +51,11 @@ def account_key(uid):
 
 
 def safe_error(exc):
+    # Strands wraps provider and metering failures in EventLoopException.
+    seen = set()
+    while exc.__cause__ is not None and id(exc) not in seen:
+        seen.add(id(exc))
+        exc = exc.__cause__
     if isinstance(exc, (BudgetExceeded, RunPaused)):
         return str(exc)
     name, message = type(exc).__name__.lower(), str(exc).lower()

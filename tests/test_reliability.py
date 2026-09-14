@@ -9,6 +9,15 @@ from epilogue.budget import Budget
 webapp = server_tests.webapp
 
 
+def test_wrapped_pause_and_allowance_errors_stay_actionable(webapp):
+    _, server, _ = webapp
+    from epilogue.budget import BudgetExceeded, RunPaused
+    for cause in (RunPaused('Paused; choose Continue to resume.'), BudgetExceeded('Your test allowance is used up.')):
+        wrapped = RuntimeError('Framework wrapper')
+        wrapped.__cause__ = cause
+        assert server.safe_error(wrapped) == str(cause)
+
+
 def wait_finished(client):
     for _ in range(300):
         state = client.get('/api/state').json()
