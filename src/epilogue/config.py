@@ -21,7 +21,7 @@ DEFAULT_MODEL_IDS = {
     # Claude Sonnet — strong tool use at agent-friendly cost. Override via EPILOGUE_MODEL_ID.
     "bedrock": os.environ.get("BEDROCK_MODEL_ID", "us.anthropic.claude-sonnet-4-5-20250929-v1:0"),
     "anthropic": "claude-sonnet-4-5",
-    "gemini": "gemini-2.5-flash",
+    "gemini": "gemini-3.6-flash",
     "openai": "gpt-4.1",
     "ollama": "qwen3:8b",
     "litellm": "bedrock/us.anthropic.claude-sonnet-4-5-20250929-v1:0",
@@ -39,9 +39,24 @@ def db_path() -> Path:
 @lru_cache(maxsize=1)
 def make_model():
     """Build the configured Strands model. Imported lazily so optional provider
-    packages are only required when actually selected."""
+    packages are only required when actually selected.
+
+    EPILOGUE_CALL_INTERVAL (seconds between model calls, process-wide) wraps the
+    model in a PacedModel — it defaults to 13s on Gemini, whose free tier allows
+    5 requests/minute, and 0 (off) elsewhere."""
     provider = os.environ.get("EPILOGUE_MODEL_PROVIDER", "bedrock").lower()
     model_id = os.environ.get("EPILOGUE_MODEL_ID") or DEFAULT_MODEL_IDS.get(provider)
+    inner = _make_provider_model(provider, model_id)
+    default_interval = "13" if provider == "gemini" else "0"
+    interval = float(os.environ.get("EPILOGUE_CALL_INTERVAL", default_interval))
+    if interval > 0:
+        from .pacing import PacedModel
+
+        return PacedModel(inner, min_interval_seconds=interval)
+    return inner
+
+
+def _make_provider_model(provider: str, model_id: str | None):
 
     if provider == "bedrock":
         from strands.models.bedrock import BedrockModel

@@ -169,6 +169,9 @@ def _run_intake(narrative: str, documents: str) -> None:
         vigil.tick(case.id)
         STATE.announce("case_ready", "Epilogue is on watch.")
     except Exception as exc:  # noqa: BLE001
+        # Never strand a half-open case: clear it so the intake form returns
+        # and the family can simply press Begin again.
+        STATE.ledger.reset()
         STATE.announce("error", f"Intake failed: {exc}")
     finally:
         STATE.status = "idle"

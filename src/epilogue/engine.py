@@ -22,6 +22,7 @@ window is a scratchpad, never the system of record.
 from __future__ import annotations
 
 import threading
+import time
 from dataclasses import dataclass, field
 from datetime import date, datetime, timedelta, timezone
 
@@ -30,6 +31,37 @@ from .domain import Case, Person, Survivor, TaskStatus, utcnow
 from .ledger import Ledger
 from .runtime import Runtime
 from .simworld import SimWorld
+
+_TRANSIENT_MARKERS = (
+    "503",
+    "unavailable",
+    "429",
+    "throttl",
+    "overload",
+    "resource exhausted",
+    "timed out",
+    "timeout",
+)
+
+
+def _is_transient(exc: Exception) -> bool:
+    text = str(exc).lower()
+    return any(marker in text for marker in _TRANSIENT_MARKERS)
+
+
+def _with_retry(label: str, fn, attempts: int = 4, base_delay: float = 8.0):
+    """Ride out transient model-provider weather (503s, rate limits).
+
+    Real estates take months; a five-minute provider hiccup should never cost
+    the family anything. Non-transient errors raise immediately.
+    """
+    for attempt in range(attempts):
+        try:
+            return fn()
+        except Exception as exc:  # noqa: BLE001
+            if attempt == attempts - 1 or not _is_transient(exc):
+                raise
+            time.sleep(base_delay * (2**attempt))
 
 
 @dataclass
@@ -75,13 +107,34 @@ class Vigil:
     def _runtime(self, case: Case) -> Runtime:
         return Runtime(ledger=self.ledger, world=self.world, case=case)
 
+    def _run_steward(self, steward, prompt: str, case_id: str) -> bool:
+        """One steward work cycle, riding out transient provider errors.
+
+        Returns False (and leaves a note) if the provider stayed down — the
+        matter simply comes back next cycle; nothing is lost but time.
+        """
+        try:
+            _with_retry("steward", lambda: steward(prompt), attempts=3, base_delay=10.0)
+            return True
+        except Exception as exc:  # noqa: BLE001
+            if not _is_transient(exc):
+                raise
+            self.ledger.record(
+                case_id,
+                "Vigil",
+                "status",
+                "A model-provider hiccup interrupted one matter — it will be retried next cycle.",
+                detail=str(exc)[:300],
+            )
+            return False
+
     # ------------------------------------------------------------------
     # Intake
     # ------------------------------------------------------------------
 
     def open_case(self, narrative: str, documents: str) -> Case:
         """Run the full intake pipeline: narrative → profile → inventory → plan."""
-        profile = read_intake(self.model, narrative)
+        profile = _with_retry("intake", lambda: read_intake(self.model, narrative))
         case = Case(
             deceased=Person(
                 full_name=profile.deceased_full_name,
@@ -104,8 +157,8 @@ class Vigil:
             detail=f"Immediate worries heard at intake: {', '.join(profile.immediate_worries) or '—'}",
         )
         rt = self._runtime(case)
-        inventory = run_archivist(self.model, rt, documents)
-        run_planner(self.model, rt, profile, inventory)
+        inventory = _with_retry("archivist", lambda: run_archivist(self.model, rt, documents))
+        _with_retry("planner", lambda: run_planner(self.model, rt, profile, inventory))
         self.world.seed_case_events(case.id)
         return case
 
@@ -134,7 +187,17 @@ class Vigil:
 
         # 2. Read and route the morning's mail.
         for mail in self.ledger.unread_mail(case_id):
-            triage = triage_mail(self.model, mail.subject, mail.body, mail.institution_name)
+            try:
+                triage = _with_retry(
+                    "triage",
+                    lambda m=mail: triage_mail(self.model, m.subject, m.body, m.institution_name),
+                    attempts=3,
+                    base_delay=10.0,
+                )
+            except Exception as exc:  # noqa: BLE001
+                if not _is_transient(exc):
+                    raise
+                continue  # mail stays unread; the next cycle triages it
             report.mail_triaged += 1
             mail.status = "processed"
             self.ledger.save_mail(mail)
@@ -168,7 +231,7 @@ class Vigil:
                 f"A first read classified it as: {triage.model_dump_json()}\n\n"
                 "Handle this now, end to end. If it needs the survivor, craft the decision well."
             )
-            steward(prompt)
+            self._run_steward(steward, prompt, case_id)
             if mail.task_id:
                 report.matters_touched.append(mail.task_id)
 
@@ -179,16 +242,21 @@ class Vigil:
                 continue
             if runs >= self.max_steward_runs:
                 continue  # not marked handled — the next cycle delivers this context
-            self.ledger.kv_set(flag, "1")
             chosen = next((o for o in decision.options if o.id == decision.resolution_option_id), None)
             runs += 1
-            steward(
-                f"{case.survivor.full_name.split()[0]} answered your question on matter "
-                f"{decision.task_id}.\nQuestion: {decision.question}\nThey chose: "
-                f"'{chosen.label if chosen else decision.resolution_option_id}'"
-                + (f" and added: “{decision.resolution_note}”" if decision.resolution_note else "")
-                + "\n\nProceed on that matter now, honoring their choice exactly."
+            handled = self._run_steward(
+                steward,
+                (
+                    f"{case.survivor.full_name.split()[0]} answered your question on matter "
+                    f"{decision.task_id}.\nQuestion: {decision.question}\nThey chose: "
+                    f"'{chosen.label if chosen else decision.resolution_option_id}'"
+                    + (f" and added: “{decision.resolution_note}”" if decision.resolution_note else "")
+                    + "\n\nProceed on that matter now, honoring their choice exactly."
+                ),
+                case_id,
             )
+            if handled:
+                self.ledger.kv_set(flag, "1")
             if decision.task_id:
                 report.matters_touched.append(decision.task_id)
 
@@ -221,11 +289,13 @@ class Vigil:
                     "institution has NOT answered. Chase it: re-send, switch channel per the "
                     "playbook, or escalate."
                 )
-            steward(
+            self._run_steward(
+                steward,
                 f"Work this matter now: {task.id} — {task.title} (category {task.category}, "
                 f"status {task.status.value}).{overdue_note}\n"
                 "Read it first with get_matter, consult the playbook if this is first contact, "
-                "then act end to end and record progress."
+                "then act end to end and record progress.",
+                case_id,
             )
             report.matters_touched.append(task.id)
 
