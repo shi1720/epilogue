@@ -11,7 +11,9 @@
 [![Python 3.10+](https://img.shields.io/badge/python-3.10%2B-b07d2e.svg)](pyproject.toml)
 [![Built with Strands](https://img.shields.io/badge/built%20with-Strands%20Agents-26251e.svg)](https://strandsagents.com)
 
-<img src="docs/media/dashboard.png" alt="The Epilogue dashboard: two things need Sarah; everything else is handled." width="850">
+<img src="docs/media/live-day12.png" alt="The Epilogue dashboard, captured from a live agent run: six things need Sarah; everything else is handled." width="850">
+
+*Captured from a **live end-to-end run**: the real agent read the documents, planned 14 matters (and opened 3 more it discovered itself), escalated to certified documents when the bank refused photocopies, blocked an identity-theft attempt with the bureau alerts it placed on day one, and settled 11 of 17 matters over 12 simulated days — surfacing only the questions above.*
 
 </div>
 
