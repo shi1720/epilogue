@@ -87,6 +87,7 @@ ledger.save_decision(Decision(
     context=("A retirement payment arrived on Sept 3, after your dad passed. Benefits aren't payable "
              "for the month of death, so it must be returned — this is normal and there is no "
              "penalty. I've prepared the repayment; I just won't move that much money without you."),
+    authorizes_amount_usd=1847.0,
     options=[
         DecisionOption(id="repay", label="Yes, repay it from the estate account",
                        consequence="Closes the matter; no interest accrues"),
