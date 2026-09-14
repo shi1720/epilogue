@@ -11,6 +11,7 @@ gate enforces.
 from __future__ import annotations
 
 import json
+import math
 from dataclasses import dataclass, field
 
 from .domain import AutonomyLevel, Case, TaskItem
@@ -74,6 +75,8 @@ class Runtime:
     # -- decision gate -----------------------------------------------------
 
     def gate_check(self, task: TaskItem, action_summary: str, moves_money_usd: float = 0.0) -> GateResult:
+        if not math.isfinite(moves_money_usd) or moves_money_usd < 0:
+            return GateResult(False, "BLOCKED BY DECISION GATE: Money amounts must be finite and non-negative.")
         contract = self.case.contract
         level = contract.level_for(task.category)
         # Only a resolved decision whose CHOSEN option authorizes action opens the

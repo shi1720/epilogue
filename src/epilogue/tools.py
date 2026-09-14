@@ -223,6 +223,12 @@ def build_case_tools(rt: Runtime) -> list:
                 f"Unknown institution '{institution_id}' — nothing was sent and no documents were "
                 f"used. Known institutions: {', '.join(sorted(INSTITUTIONS))}."
             )
+        if t.institution_id and t.institution_id != institution_id:
+            return "This institution does not match the matter. Open or use the correct matter first."
+        # The destination's capabilities outrank model-supplied risk labels.
+        if inst.kind == "digital":
+            t.category, t.risk = "digital_legacy", "irreversible"
+            rt.ledger.save_task(t)
         gate = rt.gate_check(t, f"submit to {institution_id}: {subject}", moves_money_usd)
         if not gate.allowed:
             # Only park the matter as needs_decision when a decision actually exists

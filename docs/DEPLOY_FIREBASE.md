@@ -1,56 +1,54 @@
-# Hosting the live demo with a clean URL (Cloud Run + optional `*.web.app`)
+# Deploy the private live demo
 
-Epilogue is a Python server (FastAPI + background agent threads + SQLite), so
-static hosting alone can't run it. The deployment is **Google Cloud Run**
-(runs the container, holds your API key as an env var), optionally fronted by
-**Firebase Hosting** for the clean `https://<project>.web.app` URL.
+Epilogue uses Firebase Hosting for the clean `*.web.app` address, Firebase Authentication for Google sign-in, a dedicated Firestore database named `epilogue` for case records and usage, and Cloud Run for the Python agent. A new GCP project is not needed. Firebase Hosting site IDs are globally unique; the deployment tries `epilogue`, then `epilogue-agent`, then `epilogue-shi1720` if needed.
 
-Everything is automated in one interactive script:
+From the existing project's authenticated Google Cloud Shell:
 
 ```bash
-./deploy.sh
+git pull
+PROJECT_ID=gen-lang-client-0444960702 SITE_ID=epilogue ./deploy.sh
 ```
 
-## The only manual steps (Google requires a human for these, ~5 min once)
+The migration script expects an existing Cloud Run service named `epilogue`. It preserves other Firebase apps and their authorized domains, adds a dedicated Epilogue web app, and deploys only the chosen Hosting site. The original project URL continues to route to the updated service. Google sign-in must already be configured on the project (the existing OfferLoop configuration can be shared).
 
-1. Install the [gcloud CLI](https://cloud.google.com/sdk/docs/install), then `gcloud auth login`.
-2. Create a GCP project **with billing enabled**:
-   [console.cloud.google.com/projectcreate](https://console.cloud.google.com/projectcreate) →
-   then Billing → link an account. (Cloud Run stays inside the free tier for a
-   demo; the only real spend is your OpenAI usage.)
-3. *Optional, for the clean `*.web.app` URL*: `npm i -g firebase-tools` and `firebase login`.
+The script migrates the existing server-side OpenAI key to Secret Manager, removes the old access-code gate, installs the OpenAI provider in the container, and verifies the deployed health endpoint. To use a replacement key, supply `OPENAI_API_KEY_FILE` pointing to a private file on the deployment machine. The key is read into memory and piped to Secret Manager; it is never placed in the public frontend, repository, or command-line arguments.
 
-Then run `./deploy.sh` from the repo root. It asks for the project id and your
-OpenAI key (hidden input), enables the required APIs, builds the container
-with Cloud Build, deploys Cloud Run (`min-instances=1` keeps the case clock
-warm), optionally wires Firebase Hosting, and prints your URL(s) plus the
-generated **access code**.
+## Allowances and limits
 
-> **About the exact name `epilogue.web.app`:** the `*.web.app` subdomain equals
-> your **project ID**, and short IDs like `epilogue` are usually taken. Pick
-> `epilogue-demo` / `try-epilogue` / etc. — your URL becomes
-> `epilogue-demo.web.app`. Without Firebase you still get a clean HTTPS Cloud
-> Run URL either way.
+- Each verified Google account gets a **$3 lifetime testing allowance**; no payment method is collected by Epilogue.
+- A **$30 aggregate host limit** bounds the public demo. Set `EPILOGUE_ACCOUNT_BUDGET_USD` / `EPILOGUE_GLOBAL_BUDGET_USD` when deploying to change these amounts.
+- These are app-enforced allowances against the host's OpenAI key, not purchased OpenAI credits. The underlying OpenAI project must have working billing.
+- Every request reserves an upper-bound estimate before calling OpenAI. Reported prompt, cached prompt, and completion tokens reconcile that reservation. Unknown usage after an interrupted request is conservatively charged; crash reservations remain unavailable rather than allowing an overspend.
+- The hosted model is `gpt-4.1-mini` with a 4,096-token output cap. Pricing constants live in `src/epilogue/budget.py`; enabling another model requires an explicit, verified price mapping.
+- Up to three work sessions can run at once per instance. Each session pauses after 100 model calls or 15 minutes. Continue resumes saved work. Clock jumps may pause partway through; the displayed date records progress.
+- Resetting a case, reloading the app, signing out, or restarting the service does not refill the allowance.
 
-## Security & cost posture
+## Runtime and persistence
 
-- **The API key never enters the repo or the client** — it lives only as a
-  Cloud Run environment variable.
-- **The access code gates every credit-spending action** (starting a case,
-  advancing the clock, answering decisions). Anyone can *look*; only people
-  with the code can make the agent work. Give judges the code in Devpost's
-  private testing-notes field.
-- **Cap the key**: set a monthly usage limit at platform.openai.com →
-  Settings → Limits ($5 is generous — a full case on `gpt-4.1-mini` runs
-  well under $1). Rotate the key after the hackathon.
-- **State is a demo, not a database**: SQLite lives in the container; one case
-  at a time by design; redeploys reset it.
+Cloud Run is configured for one warm instance with CPU available between requests, because the agent works after an HTTP action returns. This incurs ongoing Cloud Run hosting charges independently of OpenAI allowances. The account credit meter covers model usage only.
 
-## Verify
+Each ledger row is persisted in Firestore before local acknowledgement. A transactional per-account lease prevents overlapping runs across deployment revisions. A heartbeat renews that lease; an interrupted worker becomes resumable after its three-minute lease expires. Each account has its own ledger namespace, and a new-case action selects a new generation without resetting account usage.
+
+All private API routes, including correspondence, export, and the event feed, require a verified session. Firebase Hosting forwards only the specially named `__session` cookie; it is HttpOnly, Secure, and SameSite=Lax. Responses use `private, no-store`, and mutations require an origin check plus a custom request header. The browser never receives the OpenAI API key. Firebase's browser configuration contains public project identifiers, not the model credential.
+
+All institutions are **simulated**. No real bank, subscription, government, insurance, or credit bureau integrations are enabled. Inputs are sent to OpenAI for processing, so use fictional data when testing.
+
+## Verification
 
 ```bash
-curl https://<your-url>/api/state     # → {"case": null, ...}
+pip install -e '.[dev,hosting]'
+ruff check src tests
+pytest -m 'not live'
+node --check web/app.js
+bash -n deploy.sh
 ```
 
-Open the URL, click **Use the demo case → Begin**, enter the access code when
-asked (remembered per browser), and watch the live feed.
+For an opt-in live evaluation, run a local server with `EPILOGUE_MODEL_PROVIDER=openai`, `EPILOGUE_MODEL_ID=gpt-4.1-mini`, and `OPENAI_API_KEY` in its environment, then:
+
+```bash
+python scripts/live_e2e.py --reset --days 12 --output live-case.json
+```
+
+This explicitly resets the local test workspace and runs the fictional Mitchell case. It checks coverage, decisions, simulated outbound and inbound mail, settled matters, a weekly note, and metered spend. Do not use it against real case data.
+
+Official references: [multiple Hosting sites](https://firebase.google.com/docs/hosting/multisites), [session cookies](https://firebase.google.com/docs/auth/admin/manage-cookies), [Hosting cookie handling](https://firebase.google.com/docs/hosting/manage-cache), [GPT-4.1 mini pricing](https://developers.openai.com/api/docs/models/gpt-4.1-mini).

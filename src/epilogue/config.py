@@ -82,7 +82,11 @@ def _make_provider_model(provider: str, model_id: str | None):
     if provider == "openai":
         from strands.models.openai import OpenAIModel
 
-        return OpenAIModel(model_id=model_id, params={"temperature": 0.4})
+        return OpenAIModel(
+            model_id=model_id,
+            client_args={"timeout": 90.0, "max_retries": 0},
+            params={"temperature": 0.4, "max_tokens": 4096},
+        )
     if provider == "ollama":
         from strands.models.ollama import OllamaModel
 
