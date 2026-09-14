@@ -13,4 +13,5 @@ RUN pip install --no-cache-dir .
 
 ENV EPILOGUE_DATA_DIR=/app/data
 EXPOSE 8000
-CMD ["epilogue", "serve", "--host", "0.0.0.0", "--port", "8000"]
+# Cloud Run (and most PaaS hosts) inject the serving port as $PORT — honor it.
+CMD exec epilogue serve --host 0.0.0.0 --port "${PORT:-8000}"
