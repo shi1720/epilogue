@@ -6,7 +6,7 @@ stack of mail — each one quietly revealing another account, another renewal,
 another institution that doesn't know yet.
 """
 
-SEED_NARRATIVE = """My dad, James Mitchell, passed away on August 30th. He was 78. I'm Sarah
+SEED_NARRATIVE = """My dad, James Mitchell, passed away on August 30th, 2026. He was 78. I'm Sarah
 Mitchell, his daughter, and the court has named me executor. I live two states away and I'm
 back at work already — I just can't spend every lunch break on hold with another bank.
 

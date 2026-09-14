@@ -133,6 +133,10 @@ agentcore invoke '{"action": "tick"}'    # wire this to EventBridge Scheduler, d
 
 See [`deploy/agentcore/agentcore_app.py`](deploy/agentcore/agentcore_app.py).
 
+### Or: a public demo URL in ~10 minutes
+
+[`docs/DEPLOY_FIREBASE.md`](docs/DEPLOY_FIREBASE.md) ships a one-command **Firebase Hosting → Cloud Run** deployment (`deploy/firebase/deploy.sh`): a clean `https://<project>.web.app` URL, the model key kept server-side as a Cloud Run env var, and an access-code gate so a shared link can't spend your credits. There's also a plain [`Dockerfile`](deploy/Dockerfile) for any container host.
+
 ## What it costs to run
 
 Frugality is a design constraint: a grieving family should not pay for idle intelligence.
