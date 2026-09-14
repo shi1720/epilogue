@@ -42,11 +42,26 @@ def test_gym_swallows_portal_requests_but_honors_letters(ledger, case):
     assert done and "refund" in done[0].body.lower()
 
 
-def test_fraud_event_fires_on_schedule(ledger, case):
+def test_fraud_attempt_succeeds_when_no_alert_was_placed(ledger, case):
+    """The thief strikes on day 9 either way; with no deceased alert on file, the
+    application goes through — the world genuinely depends on the agent's work."""
     world = SimWorld(ledger)
     world.seed_case_events(case.id)
     assert world.deliver_due(case.id) == []
     ledger.advance_days(9)
+    delivered = world.deliver_due(case.id)
+    subjects = " | ".join(m.subject for m in delivered)
+    assert "new account opened" in subjects.lower()
+
+
+def test_fraud_attempt_blocked_by_deceased_alert(ledger, case):
+    world = SimWorld(ledger)
+    world.seed_case_events(case.id)
+    # The agent places a deceased alert before day 9.
+    _submit(world, case, "t9", "experian_sim")
+    ledger.advance_days(3)
+    world.deliver_due(case.id)  # bureau confirms; stage -> done
+    ledger.advance_days(6)
     delivered = world.deliver_due(case.id)
     subjects = " | ".join(m.subject for m in delivered)
     assert "blocked" in subjects.lower()

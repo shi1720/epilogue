@@ -44,11 +44,11 @@
 
 **[SCREEN: click "+3 days" on the case clock. Mail arrives in the feed; work happens.]**
 
-> **SAY:** "Estate work runs on a slow clock, so for the demo we compress it. Three days pass. The bank replies — it wants a certified death certificate. Epilogue sends one; it's tracking that Sarah only has five. StreamFlix comes back with something no script anticipated: her dad's profiles, his watch history, a list called 'Dad's Westerns'. That's not admin. That's a real decision — so it goes to Sarah."
+> **SAY:** "Estate work runs on a slow clock, so for the demo we compress it. Three days pass. The bank replies — it wants a certified death certificate. Epilogue sends one; it's tracking that Sarah only has five. StreamFlix writes back with a question that isn't admin at all: her dad's profiles, his watch history, a saved list called 'Dad's Westerns'. That's a real decision — so it goes to Sarah."
 
 **[SCREEN: advance again (+3 days / +1 week as rhythm allows). Point at decision cards appearing.]**
 
-> **SAY:** "More time passes, and the inbox fills with only what truly needs her voice. The benefits agency wants eighteen-hundred dollars returned — that's over her threshold, so Epilogue prepared everything and then stopped. This is the Decision Gate: her autonomy contract, enforced in code, inside the tools. Even a confused model cannot move that money or touch those photos — the tool itself refuses."
+> **SAY:** "More time passes, and the inbox fills with only what truly needs her voice. The benefits agency wants eighteen-hundred dollars returned — that's over her threshold, so Epilogue prepared everything and then stopped. This is the Decision Gate: her autonomy contract, enforced in code, inside the tools. Even a confused model cannot touch those photos — and that money can only move once a decision explicitly authorizes the exact amount. The tool itself refuses."
 
 **[SCREEN: resolve the photos decision ("Export everything"). The agent resumes live in the feed.]**
 
@@ -56,17 +56,17 @@
 
 **[SCREEN: scroll the timeline — the gym saga; the blocked fraud alert; open the weekly note.]**
 
-> **SAY:** "Scroll the record and you find the texture of the real thing. The gym ignored the online cancellation — so Epilogue chased it, learned written notice was required, sent the letter, and won back the dues charged after death. Here: someone tried to open a credit card in her father's name — declined automatically, because of the alerts placed on day one. And every week, Sarah gets a note in plain language. No dashboards required. It ends: 'there is no hurry.'"
+> **SAY:** "Scroll the record and you find the texture of the real thing. The gym ignored the online cancellation — so Epilogue chased it, learned written notice was required, sent the letter, and won back the dues charged after death. Here: someone tried to open a credit card in her father's name — declined automatically, because of the alerts placed on day one. And the simulation is honest: had Epilogue not placed those alerts by day nine, that application gets approved. And every week, Sarah gets a note in plain language. No dashboards required. It ends: 'there is no hurry.'"
 
 ## PART 3 — How & why (slides, 3:50–4:30)
 
 **[SLIDE 4: architecture diagram]**
 
-> **SAY:** "Under the hood: six Strands agents. A Steward orchestrator with specialists mounted as tools. Typed structured output at every stage. Strands hooks feed a full audit trail — trust needs receipts. The agents are stateless; the ledger is the system of record — which is exactly what lets this deploy on Bedrock AgentCore with a scheduler as its heartbeat. And the simulated institutions are deterministic on purpose: what you just watched was the agent's judgment, not a script."
+> **SAY:** "Under the hood: a cast of Strands agents. A Steward orchestrator with specialists mounted as tools. Typed structured output at every stage. Strands hooks feed a full audit trail — trust needs receipts. The agents are stateless; the ledger is the system of record — which is exactly what lets this deploy on Bedrock AgentCore with a scheduler as its heartbeat. And the simulated institutions are deterministic on purpose: what you just watched was the agent's judgment, not a script."
 
 **[SLIDE 5: business case]**
 
-> **SAY:** "Is this real? Three point four million American families face this every year. Companies charging for human-powered versions have raised ninety million dollars. An agentic core does a full case for about the price of a sandwich — distributed through the insurers, employers, and banks that already pay for bereavement support."
+> **SAY:** "Is this real? Three point four million American families face this every year. Companies charging for human-powered versions have raised ninety million dollars. An agentic core runs a full case for a few dollars of model cost — distributed through the insurers, employers, and banks that already pay for bereavement support."
 
 **[SLIDE 6: closing — wordmark + repo link]**
 
@@ -78,7 +78,7 @@
 
 - [ ] Intake: seed filled, scroll documents, click Begin
 - [ ] Live feed during intake (Archivist/Planner lines visible)
-- [ ] Hero line "Nothing needs you right now, Sarah"
+- [ ] Hero line ("Nothing needs you right now, Sarah" / "One thing needs you…")
 - [ ] Clock +3 days → bank reply + StreamFlix decision appears
 - [ ] Decision Gate moment ($1,847 card) on screen while narrating
 - [ ] Resolve photos decision → live resumption in feed

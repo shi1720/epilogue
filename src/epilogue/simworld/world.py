@@ -178,13 +178,18 @@ class SimWorld:
                 if (self.ledger.kv_get(item["stage_key"], "new") or "new") == item["skip_if_stage"]:
                     continue  # event no longer applies (e.g. renewal already handled)
             inst = INSTITUTIONS[item["institution_id"]]
+            subject, body = item["subject"], item["body"]
+            if (item.get("extra") or {}).get("event") == "fraud_attempt":
+                # The outcome genuinely depends on what the agent did: only a placed
+                # deceased alert (any bureau brought to stage "done") stops the thief.
+                subject, body = self._fraud_attempt_outcome()
             mail = MailMessage(
                 case_id=case_id,
                 direction="inbound",
                 institution_id=inst.id,
                 institution_name=inst.name,
-                subject=item["subject"],
-                body=item["body"],
+                subject=subject,
+                body=body,
                 task_id=item.get("task_id"),
                 sim_date=today,
             )
@@ -193,8 +198,8 @@ class SimWorld:
                 case_id,
                 actor="Postal service",
                 kind="mail_received",
-                summary=f"Reply arrived from {inst.name}: “{item['subject']}”",
-                detail=item["body"],
+                summary=f"Reply arrived from {inst.name}: “{subject}”",
+                detail=body,
                 task_id=item.get("task_id"),
             )
             delivered.append(mail)
@@ -338,12 +343,23 @@ class SimWorld:
                 "await_repayment",
             )
         if stage == "await_repayment":
+            lowered = body.lower()
+            if "repay" in lowered or "1,847" in lowered or "returned" in lowered or "enclosed" in lowered:
+                return _Reply(
+                    5,
+                    "Repayment received — record closed",
+                    "The returned benefit payment of $1,847.00 has been received and the record is now "
+                    "closed. No further action is required. We are sorry for your loss.\n\n— Survivor "
+                    "Services",
+                    "done",
+                )
             return _Reply(
                 5,
-                "Repayment received — record closed",
-                "The returned benefit payment of $1,847.00 has been received and the record is now "
-                "closed. No further action is required. We are sorry for your loss.\n\n— Survivor Services",
-                "done",
+                "Reminder: benefit payment must still be returned",
+                "Our records show the $1,847.00 benefit payment for the month of death has not yet "
+                "been returned. Please arrange repayment from the receiving account.\n\n— Survivor "
+                "Services",
+                "await_repayment",
             )
         return None
 
@@ -564,23 +580,45 @@ class SimWorld:
 
     # -- scripted world events --------------------------------------------
 
+    def _fraud_attempt_outcome(self) -> tuple[str, str]:
+        """The identity thief strikes on day 9 either way. Whether they succeed
+        depends entirely on whether the agent got deceased alerts placed in time —
+        the world checks, so the demo's protection moment is earned, not scripted."""
+        alert_placed = any(
+            self.ledger.kv_get(f"sim:inststage:{b}") == "done"
+            for b in ("equifax_sim", "experian_sim", "transunion_sim")
+        )
+        if alert_placed:
+            return (
+                "ALERT: credit application blocked on protected file",
+                "An application for a retail credit card was received today naming the deceased as "
+                "applicant (address in another state). Because a deceased alert is present on this "
+                "file, the application was AUTOMATICALLY DECLINED and flagged for fraud review. No "
+                "action is required, but the estate may wish to retain this notice.\n\n— Fraud "
+                "Operations, Experian (simulated)",
+            )
+        return (
+            "New account opened — welcome letter returned to sender",
+            "A retail credit card application in the deceased's name was APPROVED this week (no "
+            "deceased indicator was present on the file at the time). The welcome letter was "
+            "returned undeliverable, which triggered this review. The account shows $1,240 in "
+            "charges. Please contact our fraud department to begin an affidavit — resolution "
+            "typically takes 30-60 days.\n\n— Fraud Operations, Experian (simulated)",
+        )
+
     def seed_case_events(self, case_id: str) -> None:
         """Ambient events that happen TO the estate, independent of Epilogue's actions."""
         today = self.ledger.sim_today()
         # Day +9: an identity thief tries to open a card in the deceased's name.
+        # The outcome is decided at delivery time by _fraud_attempt_outcome().
         self.schedule(
             case_id,
             ScheduledDelivery(
                 due=(today + timedelta(days=9)).isoformat(),
                 institution_id="experian_sim",
-                subject="ALERT: credit application blocked on protected file",
-                body=(
-                    "An application for a retail credit card was received today naming the deceased as "
-                    "applicant (address in another state). Because a deceased alert is present on this "
-                    "file, the application was AUTOMATICALLY DECLINED and flagged for fraud review. No "
-                    "action is required, but the estate may wish to retain this notice.\n\n— Fraud "
-                    "Operations, Experian (simulated)"
-                ),
+                subject="",
+                body="",
+                extra={"event": "fraud_attempt"},
             ),
         )
         # Day +8: PixelVault renewal reminder, IF the matter hasn't been settled by then.

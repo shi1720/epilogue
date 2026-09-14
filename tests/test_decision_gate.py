@@ -29,6 +29,30 @@ def test_gate_blocks_large_money_moves(runtime):
     assert runtime.gate_check(t, "small fee", moves_money_usd=20.0).allowed is True
 
 
+def test_money_moves_need_an_explicit_amount_authorization(runtime):
+    """A resolved decision about something else must NOT authorize money moves —
+    only a decision that explicitly authorizes at least the amount does."""
+    t = TaskItem(case_id=runtime.case.id, title="Repay benefit", category="government", risk="careful")
+    runtime.ledger.save_task(t)
+    d = Decision(
+        case_id=runtime.case.id, task_id=t.id, question="Proceed with the paperwork?", context="…",
+        options=[DecisionOption(id="yes", label="Yes", consequence="…")],
+        status="resolved", resolution_option_id="yes",
+    )
+    runtime.ledger.save_decision(d)
+    assert runtime.gate_check(t, "repay", moves_money_usd=1847.0).allowed is False
+
+    d2 = Decision(
+        case_id=runtime.case.id, task_id=t.id, question="Repay $1,847 from the estate account?",
+        context="…", options=[DecisionOption(id="repay", label="Repay it", consequence="Closes the matter")],
+        status="resolved", resolution_option_id="repay", authorizes_amount_usd=1847.0,
+    )
+    runtime.ledger.save_decision(d2)
+    assert runtime.gate_check(t, "repay", moves_money_usd=1847.0).allowed is True
+    # …but not more than what was authorized.
+    assert runtime.gate_check(t, "repay more", moves_money_usd=5000.0).allowed is False
+
+
 def test_gate_opens_after_survivor_decides(runtime):
     t = TaskItem(
         case_id=runtime.case.id,
@@ -121,4 +145,26 @@ def test_certified_copies_are_finite(runtime):
         body="Enclosed.",
         attachments=["certified_death_certificate"],
     )
-    assert "none left" in out
+    assert "Not enough" in out and "nothing was sent" in out
+
+
+def test_failed_submissions_never_burn_certified_copies(runtime):
+    """A typo'd institution or unknown document must not consume finite documents."""
+    tools = build_case_tools(runtime)
+    t = TaskItem(case_id=runtime.case.id, title="Bank", category="financial", institution_id="first_harbor_bank")
+    runtime.ledger.save_task(t)
+    submit = _tool(tools, "submit_to_institution")
+
+    out = submit(
+        task_id=t.id, institution_id="bank_of_narnia", subject="Docs", body="Enclosed.",
+        attachments=["certified_death_certificate"],
+    )
+    assert "Unknown institution" in out
+    assert runtime.vault_status()["certified_death_certificate"] == 5
+
+    out = submit(
+        task_id=t.id, institution_id="first_harbor_bank", subject="Docs", body="Enclosed.",
+        attachments=["certified_death_certificate", "no_such_document"],
+    )
+    assert "Unknown document" in out
+    assert runtime.vault_status()["certified_death_certificate"] == 5

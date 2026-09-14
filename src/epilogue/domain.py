@@ -213,6 +213,10 @@ class Decision(BaseModel):
     options: list[DecisionOption]
     recommendation: str | None = Field(default=None, description="Option id Epilogue gently recommends")
     urgency: str = "whenever"  # whenever | this_week | today
+    authorizes_amount_usd: float | None = Field(
+        default=None,
+        description="When the decision is about moving money, the amount it authorizes if approved",
+    )
     status: str = "open"  # open | resolved
     resolution_option_id: str | None = None
     resolution_note: str | None = None

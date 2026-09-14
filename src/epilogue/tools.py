@@ -20,7 +20,7 @@ from datetime import datetime, timedelta, timezone
 
 from strands import tool
 
-from .domain import Decision, DecisionOption, TaskItem, TaskStatus
+from .domain import AccountInventory, Decision, DecisionOption, TaskItem, TaskStatus
 from .playbooks import PLAYBOOKS, playbook_for_kind, render_playbook
 from .runtime import Runtime
 from .simworld import INSTITUTIONS
@@ -215,21 +215,37 @@ def build_case_tools(rt: Runtime) -> list:
         t = rt.ledger.get_task(task_id)
         if t is None:
             return f"No matter with id {task_id}. Create or look up the matter first."
+        inst = INSTITUTIONS.get(institution_id)
+        if inst is None:
+            return (
+                f"Unknown institution '{institution_id}' — nothing was sent and no documents were "
+                f"used. Known institutions: {', '.join(sorted(INSTITUTIONS))}."
+            )
         gate = rt.gate_check(t, f"submit to {institution_id}: {subject}", moves_money_usd)
         if not gate.allowed:
             t.status = TaskStatus.NEEDS_DECISION
             rt.ledger.save_task(t)
             return gate.reason
-        for doc in attachments:
-            if not rt.vault_take(doc):
+        # Validate the whole attachment list BEFORE consuming anything: certified
+        # copies are finite, and a failed send must never burn one.
+        vault = rt.vault_status()
+        for doc in set(attachments):
+            available = vault.get(doc)
+            if available is None:
                 return (
-                    f"Cannot attach '{doc}': none left in the vault (or unknown document). "
-                    f"Vault: {rt.vault_status()}. Use 'death_certificate_copy' if a photocopy suffices."
+                    f"Unknown document '{doc}' — nothing was sent. Vault contents: {vault}. "
+                    f"Use 'death_certificate_copy' if a photocopy suffices."
                 )
+            if available != -1 and attachments.count(doc) > available:
+                return (
+                    f"Not enough '{doc}' left in the vault ({available} remaining) — nothing was "
+                    f"sent. Use 'death_certificate_copy' if a photocopy suffices."
+                )
+        for doc in attachments:
+            rt.vault_take(doc)
         receipt = rt.world.submit(case_id, task_id, institution_id, channel, subject, body, attachments)
         if receipt.startswith("ERROR"):
             return receipt
-        inst = INSTITUTIONS.get(institution_id)
         pb = (
             PLAYBOOKS.get(t.playbook_id)
             if t.playbook_id
@@ -260,6 +276,7 @@ def build_case_tools(rt: Runtime) -> list:
         options: list[DecisionOption],
         recommendation: str = "",
         urgency: str = "whenever",
+        authorizes_amount_usd: float = 0,
     ) -> str:
         """Surface a real decision to the survivor. Use this ONLY when a matter
         genuinely needs a human: irreversible outcomes, meaningful money, or
@@ -274,6 +291,10 @@ def build_case_tools(rt: Runtime) -> list:
                 one-line consequence.
             recommendation: The option id Epilogue gently recommends, if any.
             urgency: whenever | this_week | today.
+            authorizes_amount_usd: If the decision is about moving/repaying/forfeiting
+                money, the dollar amount an approval authorizes. The Decision Gate
+                will only permit money moves explicitly authorized this way — state
+                the amount in the question so the survivor knows what they approve.
         """
         existing = rt.ledger.open_decision_for_task(task_id)
         if existing:
@@ -287,6 +308,7 @@ def build_case_tools(rt: Runtime) -> list:
             options=options,
             recommendation=recommendation or None,
             urgency=urgency,
+            authorizes_amount_usd=authorizes_amount_usd or None,
         )
         rt.ledger.save_decision(decision)
         if t is not None:
@@ -336,23 +358,56 @@ def build_advocate_tools(rt: Runtime) -> list:
 
     @tool
     def search_benefit_records() -> str:
-        """Search benefit and refund databases for money owed to this family:
-        unclaimed property, employer benefits, veteran status, refundable
-        prepayments."""
-        deceased = rt.case.deceased
-        state = deceased.state or "OH"
-        return "\n".join(
-            [
-                f"UNCLAIMED PROPERTY ({state}): 1 record matches '{deceased.full_name}' at a former "
-                "address — utility deposit, $312.00. Claimable by the estate via institution "
-                "'ohio_unclaimed'.",
-                "EMPLOYER BENEFITS: retired 2013; pension already in pay status (survivor annuity: none "
-                "elected). No unpaid final wages.",
-                "VETERAN STATUS: no service record found — VA burial allowance not applicable.",
-                "REFUNDABLE PREPAYMENTS detected from account inventory: The Daily Ledger annual "
-                "subscription (prepaid through March), PixelVault annual plan (renews soon), possible "
-                "post-death gym dues.",
+        """Search for money owed to this family: unclaimed property (simulated state
+        registry), refundable prepayments mined from the case's account inventory,
+        and employer/veteran leads from the intake narrative."""
+        case = rt.case
+        lines: list[str] = []
+
+        # Unclaimed property — a simworld registry fixture, keyed to the state.
+        state = (case.deceased.state or "").upper()
+        if state == "OH":
+            lines.append(
+                f"UNCLAIMED PROPERTY (simulated OH registry): 1 record matches '{case.deceased.full_name}' "
+                "at a former address — utility deposit, $312.00. Claimable by the estate via "
+                "institution 'ohio_unclaimed'."
+            )
+        else:
+            lines.append(f"UNCLAIMED PROPERTY (simulated registry, {state or 'state unknown'}): no records matched.")
+
+        # Refundable prepayments — mined from what the Archivist actually found.
+        inv_raw = rt.ledger.kv_get(f"inventory:{case.id}")
+        if inv_raw:
+            inventory = AccountInventory.model_validate_json(inv_raw)
+            refundable = [
+                a
+                for a in inventory.accounts
+                if any(k in f"{a.evidence} {a.notes or ''}".lower() for k in ("annual", "prepaid", "renew"))
             ]
+            if refundable:
+                lines.append("REFUNDABLE PREPAYMENTS found in this case's account inventory:")
+                lines += [f"  - {a.institution_name}: {a.evidence}" for a in refundable]
+            else:
+                lines.append("REFUNDABLE PREPAYMENTS: none evident in the account inventory.")
+        else:
+            lines.append("REFUNDABLE PREPAYMENTS: no account inventory on file yet — run intake first.")
+
+        # Leads from the survivor's own words.
+        narrative = case.narrative.lower()
+        if "retired" in narrative or "pension" in narrative:
+            lines.append(
+                "EMPLOYER BENEFITS: a pension/retirement is referenced at intake — confirm survivor "
+                "annuity elections and any unpaid final benefit with the plan administrator."
+            )
+        if "no veteran" in narrative or "not a veteran" in narrative:
+            lines.append("VETERAN STATUS: family reports no service — VA burial allowance not applicable.")
+        elif "veteran" in narrative or "served in" in narrative:
+            lines.append("VETERAN STATUS: possible service record — check VA burial allowance and survivor pension.")
+
+        lines.append(
+            "ALSO CHECK: charges processed after the date of death on any account (dues, subscriptions) "
+            "are generally refundable on written request."
         )
+        return "\n".join(lines)
 
     return [search_benefit_records]

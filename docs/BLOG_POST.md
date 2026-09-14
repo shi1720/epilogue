@@ -11,7 +11,7 @@ When AWS announced the *Agents for Humans* hackathon, the brief was disarmingly 
 
 Most of the obvious candidates (inbox triage, travel planning, meeting scheduling) have been built a hundred times. So I asked a different question: **where in an ordinary human life does "repetitive tasks" reach its absolute maximum?**
 
-The answer changed the project. When someone dies, their family inherits an estimated **420–500 hours of administration** over the following year: notifying every bank (each demanding certified documents), returning the final benefits payment (benefits for the month of death are clawed back — most families learn this the hard way), cancelling subscriptions that keep billing a dead person's card, coaxing a gym into honoring its own cancellation policy, filing insurance claims, keeping the lights on at an empty house. Meanwhile, identity thieves target the recently deceased so consistently that the crime has a name — *ghosting* — with hundreds of thousands of victims a year.
+The answer changed the project. When someone dies, their family inherits an estimated **420–500 hours of administration** (Empathy's *Cost of Dying* research) over the following year: notifying every bank (each demanding certified documents), returning the final benefits payment (benefits for the month of death are clawed back — most families learn this the hard way), cancelling subscriptions that keep billing a dead person's card, coaxing a gym into honoring its own cancellation policy, filing insurance claims, keeping the lights on at an empty house. Meanwhile, identity thieves target the recently deceased so consistently that the crime has a name — *ghosting* — with hundreds of thousands of victims a year.
 
 The British call this workload *sadmin*. It lands, in full, on people who are grieving.
 
@@ -75,7 +75,7 @@ Between work cycles, the agents remember *nothing*. All state — matters, notes
 
 ### 6. Test the loop, not the model
 
-I implemented Strands' `Model` interface as a deterministic `ScriptedModel` that replays tool calls and structured outputs through the **real** event loop. The CI suite (21 tests, under a second, zero credentials) proves the gate blocks, the vault decrements certified copies, the world's gym ignores portal cancellations, and a full matter lifecycle settles. The live model then only has to supply judgment — the machine around it is already proven.
+I implemented Strands' `Model` interface as a deterministic `ScriptedModel` that replays tool calls and structured outputs through the **real** event loop. The CI suite (24 tests, under a second, zero credentials) proves the gate blocks, the vault decrements certified copies, the world's gym ignores portal cancellations, and a full matter lifecycle settles. The live model then only has to supply judgment — the machine around it is already proven.
 
 ## The part nobody warns you about: time
 

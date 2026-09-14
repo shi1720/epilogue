@@ -181,7 +181,7 @@ def _run_advance(days: int) -> None:
         vigil = STATE.get_vigil()
         for _ in range(days):
             day = STATE.ledger.advance_days(1)
-            STATE.announce("clock", f"— {day.strftime('%A, %B %-d')} —")
+            STATE.announce("clock", f"— {day.strftime('%A, %B')} {day.day} —")
             report = vigil.tick(case.id)
             if report.quiet:
                 STATE.announce("status", "A quiet day. Nothing needed attention.")
@@ -229,6 +229,8 @@ def resolve_decision(decision_id: str, req: ResolveRequest) -> JSONResponse:
 
 @app.post("/api/reset")
 def reset() -> JSONResponse:
+    if STATE.status != "idle":
+        raise HTTPException(409, "Epilogue is mid-cycle; try again in a moment.")
     STATE.ledger.reset()
     STATE.announce("reset", "Case cleared.")
     return JSONResponse({"status": "reset"})

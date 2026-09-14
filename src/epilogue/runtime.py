@@ -84,16 +84,23 @@ class Runtime:
                 ),
             )
 
+        # Money is checked first, and a category approval is never enough: a move above
+        # the threshold requires a resolved decision that EXPLICITLY authorizes at least
+        # that amount (ask_survivor's authorizes_amount_usd). This keeps one approved
+        # question ("transfer the profiles?") from silently authorizing later transfers.
+        if moves_money_usd and moves_money_usd > contract.financial_threshold_usd:
+            authorized = approved is not None and (approved.authorizes_amount_usd or 0.0) >= moves_money_usd
+            if not authorized:
+                return blocked(
+                    f"This action moves or forfeits ${moves_money_usd:,.2f}, above the survivor's "
+                    f"${contract.financial_threshold_usd:,.2f} threshold, and no resolved decision "
+                    f"explicitly authorizes that amount (set authorizes_amount_usd when asking)."
+                )
         if approved is not None:
             return GateResult(True, f"Survivor decision {approved.id} on file — action authorized.")
         if task.risk == "irreversible" or level == AutonomyLevel.ASK_FIRST:
             return blocked(
                 f"'{task.title}' is in category '{task.category}' (autonomy: ask_first / risk: {task.risk})."
-            )
-        if moves_money_usd and moves_money_usd > contract.financial_threshold_usd:
-            return blocked(
-                f"This action moves or forfeits ${moves_money_usd:,.2f}, above the survivor's "
-                f"${contract.financial_threshold_usd:,.2f} threshold."
             )
         return GateResult(True, f"Within autonomy contract ({level.value}).")
 

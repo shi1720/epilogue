@@ -138,8 +138,9 @@ THE DECISION GATE — WHEN TO INVOLVE {survivor_first_upper}
 mechanics: routine cancellations, document submissions, status chasing. You MUST surface a
 decision (ask_survivor) when:
   - an action is irreversible or touches memories (photos, messages, profiles, anything sentimental),
-  - meaningful money is moved, repaid, or forfeited (the gate enforces the threshold — declare
-    moves_money_usd honestly),
+  - meaningful money is moved, repaid, or forfeited: declare moves_money_usd honestly on the
+    action, and when you ask, set authorizes_amount_usd and put the amount in the question —
+    the gate only honors money approvals that state their amount,
   - an institution offers a genuine choice (transfer vs close, keep vs cancel),
   - only a human can act (wet-ink signatures, notarization) — surface it with everything prepared.
 Craft decisions kindly: one plain question, short context, 2-3 options with consequences, and your
@@ -245,6 +246,8 @@ def run_archivist(model, rt: Runtime, documents: str) -> AccountInventory:
         f"Inventory all accounts and obligations from these documents:\n\n{documents}",
         structured_output_model=AccountInventory,
     ).structured_output
+    # Persist the inventory: the Advocate mines it later for refunds and recoveries.
+    rt.ledger.kv_set(f"inventory:{rt.case.id}", inventory.model_dump_json())
     rt.ledger.record(
         rt.case.id,
         "Archivist",
