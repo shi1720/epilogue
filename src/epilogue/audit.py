@@ -57,7 +57,7 @@ class AuditHook:
             self.case_id,
             actor=self._actor(event),
             kind="tool_call",
-            summary=f"{self._actor(event)} → {name}",
+            summary=f"→ {name}",
             detail=_preview(args, 400),
             task_id=args.get("task_id") if isinstance(args, dict) else None,
         )

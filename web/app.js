@@ -20,8 +20,26 @@ function fmtDate(iso) {
   return d.toLocaleDateString("en-US", { month: "short", day: "numeric" });
 }
 
+let accessCode = null;
+try { accessCode = localStorage.getItem("epilogue_code"); } catch (e) {}
+
 async function api(path, opts) {
+  if (opts && opts.method === "POST") {
+    opts.headers = opts.headers || {};
+    if (accessCode) opts.headers["X-Epilogue-Code"] = accessCode;
+  }
   const res = await fetch(path, opts);
+  if (res.status === 401 && opts && opts.method === "POST") {
+    const code = prompt("This shared demo asks for an access code:");
+    if (code) {
+      accessCode = code;
+      try { localStorage.setItem("epilogue_code", code); } catch (e) {}
+      opts.headers["X-Epilogue-Code"] = code;
+      const retry = await fetch(path, opts);
+      if (!retry.ok) throw new Error(await retry.text());
+      return retry.json();
+    }
+  }
   if (!res.ok) throw new Error(await res.text());
   return res.json();
 }

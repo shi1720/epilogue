@@ -18,7 +18,7 @@ import threading
 from contextlib import asynccontextmanager
 from pathlib import Path
 
-from fastapi import FastAPI, HTTPException
+from fastapi import Depends, FastAPI, HTTPException, Request
 from fastapi.responses import FileResponse, JSONResponse, StreamingResponse
 from fastapi.staticfiles import StaticFiles
 from pydantic import BaseModel
@@ -30,7 +30,32 @@ from .engine import resolve_decision as engine_resolve_decision
 from .ledger import Ledger
 from .runtime import DEFAULT_VAULT, vault_status
 
-WEB_DIR = Path(__file__).resolve().parent.parent.parent / "web"
+
+def _find_web_dir() -> Path:
+    """Locate the static frontend in source checkouts, Docker images, and
+    installed packages alike (EPILOGUE_WEB_DIR overrides)."""
+    candidates = [
+        os.environ.get("EPILOGUE_WEB_DIR"),
+        Path(__file__).resolve().parent.parent.parent / "web",  # src layout
+        Path.cwd() / "web",  # Docker / running from a checkout
+    ]
+    for candidate in candidates:
+        if candidate and Path(candidate).is_dir():
+            return Path(candidate)
+    raise RuntimeError("web/ directory not found — set EPILOGUE_WEB_DIR")
+
+
+WEB_DIR = _find_web_dir()
+
+
+def require_access(request: Request) -> None:
+    """When EPILOGUE_ACCESS_CODE is set (public demo hosting), mutating
+    endpoints require the code — so a shared URL can't spend the host's
+    model credits. Reads stay open; the code travels as a header the UI
+    collects once and remembers."""
+    code = os.environ.get("EPILOGUE_ACCESS_CODE")
+    if code and request.headers.get("x-epilogue-code") != code:
+        raise HTTPException(401, "This shared demo requires an access code.")
 
 
 class IntakeRequest(BaseModel):
@@ -110,6 +135,11 @@ def index() -> FileResponse:
 # ---------------------------------------------------------------------------
 
 
+@app.get("/api/meta")
+def get_meta() -> JSONResponse:
+    return JSONResponse({"access_code_required": bool(os.environ.get("EPILOGUE_ACCESS_CODE"))})
+
+
 @app.get("/api/state")
 def get_state() -> JSONResponse:
     ledger = STATE.ledger
@@ -179,7 +209,7 @@ def _run_intake(narrative: str, documents: str) -> None:
 
 
 @app.post("/api/case")
-def create_case(req: IntakeRequest) -> JSONResponse:
+def create_case(req: IntakeRequest, _: None = Depends(require_access)) -> JSONResponse:
     if STATE.ledger.first_case() is not None:
         raise HTTPException(409, "A case is already open. Reset first.")
     if not STATE.busy.acquire(blocking=False):
@@ -209,7 +239,7 @@ def _run_advance(days: int) -> None:
 
 
 @app.post("/api/clock/advance")
-def advance_clock(req: AdvanceRequest) -> JSONResponse:
+def advance_clock(req: AdvanceRequest, _: None = Depends(require_access)) -> JSONResponse:
     case = STATE.ledger.first_case()
     if case is None:
         raise HTTPException(400, "No case open.")
@@ -233,7 +263,7 @@ def _run_reaction() -> None:
 
 
 @app.post("/api/decisions/{decision_id}/resolve")
-def resolve_decision(decision_id: str, req: ResolveRequest) -> JSONResponse:
+def resolve_decision(decision_id: str, req: ResolveRequest, _: None = Depends(require_access)) -> JSONResponse:
     decision = STATE.ledger.get_decision(decision_id)
     if decision is None:
         raise HTTPException(404, "No such decision.")
@@ -251,7 +281,7 @@ def resolve_decision(decision_id: str, req: ResolveRequest) -> JSONResponse:
 
 
 @app.post("/api/reset")
-def reset() -> JSONResponse:
+def reset(_: None = Depends(require_access)) -> JSONResponse:
     # Take the same busy lock the work cycles use, so a reset can never race a
     # cycle that is between acquiring the lock and doing its work.
     if STATE.status != "idle" or not STATE.busy.acquire(blocking=False):

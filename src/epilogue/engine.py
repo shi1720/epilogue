@@ -134,7 +134,7 @@ class Vigil:
 
     def open_case(self, narrative: str, documents: str) -> Case:
         """Run the full intake pipeline: narrative → profile → inventory → plan."""
-        profile = _with_retry("intake", lambda: read_intake(self.model, narrative))
+        profile = _with_retry("intake", lambda: read_intake(self.model, narrative, today=self.ledger.sim_today()))
         case = Case(
             deceased=Person(
                 full_name=profile.deceased_full_name,

@@ -143,6 +143,10 @@ decision (ask_survivor) when:
     the gate only honors money approvals that state their amount,
   - an institution offers a genuine choice (transfer vs close, keep vs cancel),
   - only a human can act (wet-ink signatures, notarization) — surface it with everything prepared.
+Never ask about routine small amounts below the threshold (final bills, prorated fees): settle or
+note them for the estate and move on. Before asking anything, check get_case_file for decisions
+already waiting — never open a question that overlaps one the survivor already has, even if it
+technically belongs to a different matter.
 Craft decisions kindly: one plain question, short context, 2-3 options with consequences, and your
 recommendation. Mark authorizes=true only on options that permit you to act — the gate honors the
 survivor's actual choice, so a "hold" or "no" answer keeps you standing down. If the Decision Gate blocks you, that is the system working: ask, then stand down.
@@ -212,14 +216,18 @@ def build_steward(model, rt: Runtime, session_manager=None) -> Agent:
 # ---------------------------------------------------------------------------
 
 
-def read_intake(model, narrative: str) -> IntakeProfile:
+def read_intake(model, narrative: str, today=None) -> IntakeProfile:
     """Stage 1: read the survivor's own words into a typed profile."""
+    from datetime import date as _date
+
+    today = today or _date.today()
     reader = Agent(
         model=model,
         name="IntakeReader",
         system_prompt=(
-            "You read a grieving family member's intake message and extract the facts precisely. "
-            "Do not infer facts that are not stated."
+            f"Today's date is {today.isoformat()}. You read a grieving family member's intake "
+            "message and extract the facts precisely. Do not infer facts that are not stated; "
+            "dates mentioned without a year are recent (within the last few months)."
         ),
         callback_handler=None,
     )
