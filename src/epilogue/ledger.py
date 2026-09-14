@@ -16,6 +16,7 @@ from __future__ import annotations
 import sqlite3
 import threading
 from collections.abc import Callable
+from contextlib import contextmanager
 from datetime import date, datetime, timedelta, timezone
 from pathlib import Path
 
@@ -103,6 +104,12 @@ class Ledger:
     def _rows(self, sql: str, args: tuple = ()) -> list[str]:
         with self._lock:
             return [r[0] for r in self._conn.execute(sql, args).fetchall()]
+
+    @contextmanager
+    def atomic(self):
+        """Serialize compound changes inside the account's leased worker."""
+        with self._lock:
+            yield
 
     # -- sim clock ---------------------------------------------------------
 

@@ -162,27 +162,29 @@ def build_case_tools(rt: Runtime) -> list:
             risk: routine | careful | irreversible.
             estimated_minutes_saved: Survivor minutes this saves when automated.
         """
-        for existing in rt.ledger.tasks_for_case(case_id):
-            if _title_key(existing.title) == _title_key(title):
-                identify(existing)
-                return f"Already on file as {existing.id} ({existing.status.value}). Review and update that matter; do not duplicate it."
-        institution_id = institution_id or _named_institution(title) or ''
-        if institution_id and institution_id not in INSTITUTIONS:
-            return "That institution has no simulated channel. Leave its ID empty and prepare manual next steps."
-        if institution_id and INSTITUTIONS[institution_id].kind == 'digital':
-            category, risk = 'digital_legacy', 'irreversible'
-        task = TaskItem(
-            case_id=case_id,
-            title=title,
-            category=category,
-            institution_id=institution_id or None,
-            why=why,
-            risk=risk,
-            estimated_minutes_saved=estimated_minutes_saved,
-        )
-        rt.ledger.save_task(task)
-        rt.ledger.record(case_id, "Steward", "status", f"Opened new matter: {title}", task_id=task.id)
-        return f"Created {task.id}."
+        # Strands may execute two tool calls from the same model turn concurrently.
+        with rt.ledger.atomic():
+            for existing in rt.ledger.tasks_for_case(case_id):
+                if _title_key(existing.title) == _title_key(title):
+                    identify(existing)
+                    return f"Already on file as {existing.id} ({existing.status.value}). Review and update that matter; do not duplicate it."
+            institution_id = institution_id or _named_institution(title) or ''
+            if institution_id and institution_id not in INSTITUTIONS:
+                return "That institution has no simulated channel. Leave its ID empty and prepare manual next steps."
+            if institution_id and INSTITUTIONS[institution_id].kind == 'digital':
+                category, risk = 'digital_legacy', 'irreversible'
+            task = TaskItem(
+                case_id=case_id,
+                title=title,
+                category=category,
+                institution_id=institution_id or None,
+                why=why,
+                risk=risk,
+                estimated_minutes_saved=estimated_minutes_saved,
+            )
+            rt.ledger.save_task(task)
+            rt.ledger.record(case_id, "Steward", "status", f"Opened new matter: {title}", task_id=task.id)
+            return f"Created {task.id}."
 
     @tool
     def update_matter(task_id: str, status: str = "", note: str = "", follow_up_days: int = 0) -> str:

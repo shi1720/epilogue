@@ -272,3 +272,19 @@ def test_existing_named_matter_gets_correct_channel_without_bypassing_gate(runti
     assert 'BLOCKED' in result
     assert runtime.ledger.get_task(task.id).institution_id == 'pixelvault'
     assert runtime.ledger.mail_for_case(runtime.case.id) == []
+
+
+def test_parallel_followup_creation_is_atomic(runtime, monkeypatch):
+    import time
+    from concurrent.futures import ThreadPoolExecutor
+    save = runtime.ledger.save_task
+    def slow_save(task):
+        time.sleep(.02)
+        return save(task)
+    monkeypatch.setattr(runtime.ledger, 'save_task', slow_save)
+    def create(_):
+        return _tool(build_case_tools(runtime), 'create_matter')(
+            title='Request PixelVault refund', category='benefits')
+    with ThreadPoolExecutor(max_workers=8) as pool:
+        list(pool.map(create, range(8)))
+    assert len(runtime.ledger.tasks_for_case(runtime.case.id)) == 1
