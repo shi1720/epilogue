@@ -13,6 +13,7 @@ from __future__ import annotations
 
 import asyncio
 import json
+import os
 import threading
 from contextlib import asynccontextmanager
 from pathlib import Path
@@ -25,6 +26,7 @@ from pydantic import BaseModel
 from .config import db_path, make_model
 from .domain import AuditEvent
 from .engine import Vigil
+from .engine import resolve_decision as engine_resolve_decision
 from .ledger import Ledger
 from .runtime import DEFAULT_VAULT, vault_status
 
@@ -57,7 +59,12 @@ class AppState:
 
     def get_vigil(self) -> Vigil:
         if self.vigil is None:
-            self.vigil = Vigil(self.ledger, make_model())
+            self.vigil = Vigil(
+                self.ledger,
+                make_model(),
+                # Lower this on rate-limited free-tier keys (e.g. EPILOGUE_MAX_STEWARD_RUNS=3).
+                max_steward_runs_per_tick=int(os.environ.get("EPILOGUE_MAX_STEWARD_RUNS", "6")),
+            )
         return self.vigil
 
     def _fanout(self, event: AuditEvent) -> None:
@@ -227,6 +234,12 @@ def resolve_decision(decision_id: str, req: ResolveRequest) -> JSONResponse:
     decision = STATE.ledger.get_decision(decision_id)
     if decision is None:
         raise HTTPException(404, "No such decision.")
+    if os.environ.get("EPILOGUE_PREVIEW"):
+        # Preview mode has no model: record the resolution mechanically so the
+        # UI flow can be felt end to end without credentials.
+        engine_resolve_decision(STATE.ledger, decision_id, req.option_id, req.note)
+        STATE.announce("status", "(Preview mode: with a model configured, Epilogue would resume this matter now.)")
+        return JSONResponse({"status": "resolved"})
     STATE.get_vigil().resolve_decision(decision_id, req.option_id, req.note)
     if STATE.busy.acquire(blocking=False):
         STATE.status = "working"

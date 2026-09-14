@@ -258,31 +258,7 @@ class Vigil:
     # ------------------------------------------------------------------
 
     def resolve_decision(self, decision_id: str, option_id: str, note: str = "") -> None:
-        decision = self.ledger.get_decision(decision_id)
-        if decision is None or decision.status == "resolved":
-            return
-        decision.status = "resolved"
-        decision.resolution_option_id = option_id
-        decision.resolution_note = note or None
-        decision.resolved_at = utcnow()
-        self.ledger.save_decision(decision)
-        chosen = next((o for o in decision.options if o.id == option_id), None)
-        case = self.ledger.get_case(decision.case_id)
-        first = case.survivor.full_name.split()[0] if case else "The survivor"
-        self.ledger.record(
-            decision.case_id,
-            "Survivor",
-            "decision_resolved",
-            f"{first} decided: {chosen.label if chosen else option_id}",
-            detail=(note or ""),
-            task_id=decision.task_id,
-        )
-        if decision.task_id:
-            task = self.ledger.get_task(decision.task_id)
-            if task is not None:
-                task.status = TaskStatus.IN_PROGRESS
-                task.next_action_at = None
-                self.ledger.save_task(task)
+        resolve_decision(self.ledger, decision_id, option_id, note)
 
     # ------------------------------------------------------------------
     # The weekly note
@@ -323,3 +299,36 @@ class Vigil:
         self.ledger.record(
             case.id, "Epilogue", "note", f"A note for {first} about the week", detail=note.strip()
         )
+
+
+def resolve_decision(ledger: Ledger, decision_id: str, option_id: str, note: str = "") -> None:
+    """Record the survivor's answer on the ledger and unblock the matter.
+
+    Standalone so the dashboard can resolve decisions even with no model
+    configured (preview mode); the Vigil delegates here.
+    """
+    decision = ledger.get_decision(decision_id)
+    if decision is None or decision.status == "resolved":
+        return
+    decision.status = "resolved"
+    decision.resolution_option_id = option_id
+    decision.resolution_note = note or None
+    decision.resolved_at = utcnow()
+    ledger.save_decision(decision)
+    chosen = next((o for o in decision.options if o.id == option_id), None)
+    case = ledger.get_case(decision.case_id)
+    first = case.survivor.full_name.split()[0] if case else "The survivor"
+    ledger.record(
+        decision.case_id,
+        "Survivor",
+        "decision_resolved",
+        f"{first} decided: {chosen.label if chosen else option_id}",
+        detail=(note or ""),
+        task_id=decision.task_id,
+    )
+    if decision.task_id:
+        task = ledger.get_task(decision.task_id)
+        if task is not None:
+            task.status = TaskStatus.IN_PROGRESS
+            task.next_action_at = None
+            ledger.save_task(task)

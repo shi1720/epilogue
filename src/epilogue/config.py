@@ -2,10 +2,12 @@
 
 Epilogue is provider-agnostic thanks to the Strands model abstraction.
 Amazon Bedrock is the default (and what the AgentCore deployment uses);
-Anthropic, OpenAI, Ollama, and LiteLLM are one environment variable away —
-useful for local development and for judges without an AWS account handy.
+Anthropic, Gemini, OpenAI, Ollama, and LiteLLM are one environment variable
+away — useful for local development and for judges without an AWS account
+handy. Gemini deserves a special mention: Google AI Studio keys have a free
+tier, so the full live demo can be experienced at zero cost.
 
-    EPILOGUE_MODEL_PROVIDER = bedrock | anthropic | openai | ollama | litellm
+    EPILOGUE_MODEL_PROVIDER = bedrock | anthropic | gemini | openai | ollama | litellm
     EPILOGUE_MODEL_ID       = provider-specific model id (optional, sane defaults)
 """
 
@@ -19,6 +21,7 @@ DEFAULT_MODEL_IDS = {
     # Claude Sonnet — strong tool use at agent-friendly cost. Override via EPILOGUE_MODEL_ID.
     "bedrock": os.environ.get("BEDROCK_MODEL_ID", "us.anthropic.claude-sonnet-4-5-20250929-v1:0"),
     "anthropic": "claude-sonnet-4-5",
+    "gemini": "gemini-2.5-flash",
     "openai": "gpt-4.1",
     "ollama": "qwen3:8b",
     "litellm": "bedrock/us.anthropic.claude-sonnet-4-5-20250929-v1:0",
@@ -52,6 +55,15 @@ def make_model():
         from strands.models.anthropic import AnthropicModel
 
         return AnthropicModel(model_id=model_id, max_tokens=4096, params={"temperature": 0.4})
+    if provider == "gemini":
+        from strands.models.gemini import GeminiModel
+
+        api_key = os.environ.get("GOOGLE_API_KEY") or os.environ.get("GEMINI_API_KEY")
+        return GeminiModel(
+            client_args={"api_key": api_key} if api_key else None,
+            model_id=model_id,
+            params={"temperature": 0.4},
+        )
     if provider == "openai":
         from strands.models.openai import OpenAIModel
 

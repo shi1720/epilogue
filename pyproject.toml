@@ -23,6 +23,7 @@ dependencies = [
 
 [project.optional-dependencies]
 anthropic = ["strands-agents[anthropic]"]
+gemini = ["strands-agents[gemini]"]
 openai = ["strands-agents[openai]"]
 ollama = ["strands-agents[ollama]"]
 litellm = ["strands-agents[litellm]"]

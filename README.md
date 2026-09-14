@@ -79,6 +79,7 @@ pip install -e .
 
 # Pick a model provider (Bedrock is the default):
 export AWS_REGION=us-east-1            # with Bedrock access to Claude Sonnet, or:
+# export EPILOGUE_MODEL_PROVIDER=gemini   && pip install -e ".[gemini]"   && export GOOGLE_API_KEY=...   # FREE key: aistudio.google.com/apikey
 # export EPILOGUE_MODEL_PROVIDER=anthropic && pip install -e ".[anthropic]" && export ANTHROPIC_API_KEY=...
 # export EPILOGUE_MODEL_PROVIDER=openai   && pip install -e ".[openai]"   && export OPENAI_API_KEY=...
 # export EPILOGUE_MODEL_PROVIDER=ollama   && pip install -e ".[ollama]"   # local, no key

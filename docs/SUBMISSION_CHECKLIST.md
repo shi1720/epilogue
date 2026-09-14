@@ -14,6 +14,9 @@ Total hands-on time: ~60–90 minutes, most of it the video.
 
 Pick ONE:
 
+- **Gemini — completely FREE (fastest way to test):** create a key at https://aistudio.google.com/apikey (any Google account, no card), then:
+  `pip install -e ".[gemini]" && export EPILOGUE_MODEL_PROVIDER=gemini GOOGLE_API_KEY=…`
+  Free-tier rate limits pace the agent a little — fine for testing. For the *recording*, prefer Bedrock (below) so the "live on Amazon Bedrock" line in the script stays true; if you record on Gemini, just drop those three words.
 - **Bedrock (best for judging optics + the $50 AWS credits):** in the AWS console, enable model access for *Anthropic Claude Sonnet* in `us-east-1` (Bedrock → Model access), create an access key, then:
   `export AWS_ACCESS_KEY_ID=… AWS_SECRET_ACCESS_KEY=… AWS_REGION=us-east-1`
   If your account uses a different Claude model id, also set `EPILOGUE_MODEL_ID` (check Bedrock → Model catalog for the exact inference-profile id).

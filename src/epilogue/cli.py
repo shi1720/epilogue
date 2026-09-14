@@ -69,8 +69,10 @@ def main(argv: list[str] | None = None) -> int:
             Ledger(db_path()).reset()
             print("Fresh case database. The intake form will offer the demo case.")
         if args.command == "preview":
-            # Keep the preview world separate from any real case data.
+            # Keep the preview world separate from any real case data, and tell the
+            # server not to attempt live agent reactions (no model is configured).
             os.environ.setdefault("EPILOGUE_DATA_DIR", "data-preview")
+            os.environ["EPILOGUE_PREVIEW"] = "1"
             from .config import db_path
             from .ledger import Ledger
             from .preview import seed_preview
