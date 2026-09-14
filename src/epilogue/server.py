@@ -173,6 +173,7 @@ def create_case(req: IntakeRequest) -> JSONResponse:
         raise HTTPException(409, "A case is already open. Reset first.")
     if not STATE.busy.acquire(blocking=False):
         raise HTTPException(409, "Epilogue is busy.")
+    STATE.status = "intake"  # set before the thread starts so pollers never see a stale idle
     threading.Thread(target=_run_intake, args=(req.narrative, req.documents), daemon=True).start()
     return JSONResponse({"status": "started"})
 
@@ -203,6 +204,7 @@ def advance_clock(req: AdvanceRequest) -> JSONResponse:
         raise HTTPException(400, "No case open.")
     if not STATE.busy.acquire(blocking=False):
         raise HTTPException(409, "Epilogue is busy.")
+    STATE.status = "working"  # set before the thread starts so pollers never see a stale idle
     threading.Thread(target=_run_advance, args=(max(1, min(req.days, 14)),), daemon=True).start()
     return JSONResponse({"status": "started"})
 
@@ -226,6 +228,7 @@ def resolve_decision(decision_id: str, req: ResolveRequest) -> JSONResponse:
         raise HTTPException(404, "No such decision.")
     STATE.get_vigil().resolve_decision(decision_id, req.option_id, req.note)
     if STATE.busy.acquire(blocking=False):
+        STATE.status = "working"
         threading.Thread(target=_run_reaction, daemon=True).start()
     return JSONResponse({"status": "resolved"})
 
