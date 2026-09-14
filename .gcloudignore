@@ -1,0 +1,17 @@
+# Keep the Cloud Build upload small (Docker build needs: Dockerfile, pyproject,
+# README, LICENSE, src/, web/)
+.git/
+.github/
+.venv/
+venv/
+data/
+data-preview/
+.pytest_cache/
+.ruff_cache/
+docs/
+tests/
+scripts/
+deploy/
+**/__pycache__/
+*.webm
+*.db

@@ -137,7 +137,7 @@ See [`deploy/agentcore/agentcore_app.py`](deploy/agentcore/agentcore_app.py).
 
 ### Or: a public demo URL in ~10 minutes
 
-[`docs/DEPLOY_FIREBASE.md`](docs/DEPLOY_FIREBASE.md) ships a one-command **Firebase Hosting → Cloud Run** deployment (`deploy/firebase/deploy.sh`): a clean `https://<project>.web.app` URL, the model key kept server-side as a Cloud Run env var, and an access-code gate so a shared link can't spend your credits. There's also a plain [`Dockerfile`](deploy/Dockerfile) for any container host.
+Run [`./deploy.sh`](deploy.sh) — an interactive one-command deploy to **Google Cloud Run**, with an optional clean `https://<project>.web.app` URL via Firebase Hosting. The model key is kept server-side as a Cloud Run env var (never in the repo or client), and an access-code gate keeps a shared link from spending your credits. Details: [`docs/DEPLOY_FIREBASE.md`](docs/DEPLOY_FIREBASE.md); a plain [`Dockerfile`](Dockerfile) works on any container host.
 
 ## What it costs to run
 

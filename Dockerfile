@@ -1,8 +1,7 @@
 # Epilogue — container image (dashboard + Vigil)
-# Build from the repository root:
-#   docker build -f deploy/Dockerfile -t epilogue .
+#   docker build -t epilogue .
 #   docker run -p 8000:8000 -v epilogue-data:/app/data \
-#     -e AWS_ACCESS_KEY_ID -e AWS_SECRET_ACCESS_KEY -e AWS_REGION epilogue
+#     -e EPILOGUE_MODEL_PROVIDER=openai -e OPENAI_API_KEY epilogue
 
 FROM python:3.12-slim
 

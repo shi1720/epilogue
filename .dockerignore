@@ -1,0 +1,13 @@
+.venv/
+venv/
+data/
+data-preview/
+.git/
+.github/
+.pytest_cache/
+.ruff_cache/
+docs/media/
+tests/
+scripts/
+**/__pycache__/
+*.webm
