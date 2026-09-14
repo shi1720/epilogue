@@ -34,7 +34,7 @@ Sanity check before recording: `epilogue demo`, open the dashboard, click **Use 
 
 ## 4. Devpost form (15 min)
 
-- [ ] `docs/DEVPOST.md` is a copy-paste kit: name, tagline, track (**Everyday Agents**), full story, built-with tags, and testing instructions for judges.
+- [ ] The Devpost copy-paste kit (name, tagline, track — **Everyday Agents** — full story, built-with tags, and testing instructions for judges) is provided directly in the Claude chat — intentionally not in the repo.
 - [ ] Attach: video URL, public repo URL, and screenshots from `docs/media/`.
 - [ ] You'll need your **AWS Builder ID** (create at profile.aws.amazon.com if you don't have one).
 
