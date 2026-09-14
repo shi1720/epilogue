@@ -111,6 +111,9 @@ def build_case_tools(rt: Runtime) -> list:
         pending = rt.ledger.open_decision_for_task(t.id)
         if pending:
             lines.append(f"  A decision is OPEN and waiting on the survivor: {pending.question}")
+        if not t.institution_id:
+            lines.append("  No institution channel is assigned. Research and prepare next steps; do not "
+                         "send this matter to an unrelated institution or claim it was contacted.")
         mail = [m for m in rt.ledger.mail_for_case(case_id, limit=200) if m.task_id == t.id][:4]
         for m in mail:
             arrow = "→" if m.direction == "outbound" else "←"
@@ -225,8 +228,10 @@ def build_case_tools(rt: Runtime) -> list:
                 f"Unknown institution '{institution_id}' — nothing was sent and no documents were "
                 f"used. Known institutions: {', '.join(sorted(INSTITUTIONS))}."
             )
-        if t.institution_id and t.institution_id != institution_id:
-            return "This institution does not match the matter. Open or use the correct matter first."
+        if t.institution_id != institution_id:
+            return ("This institution does not match the matter, or the matter has no supported channel. "
+                    "Nothing was sent. Use a matter assigned to this exact institution; otherwise "
+                    "prepare instructions for the family without claiming contact was made.")
         if inst.kind == "credit_bureau" and "certified_death_certificate" in attachments:
             return (
                 "This simulated bureau accepts 'death_certificate_copy'. Nothing was sent. "

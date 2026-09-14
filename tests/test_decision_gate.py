@@ -238,3 +238,14 @@ def test_repayment_requires_explicit_amount_and_survivor_approval(runtime):
         status='resolved', resolution_option_id='repay', authorizes_amount_usd=1847))
     assert 'Delivered' in submit(**args, moves_money_usd=1847)
     assert runtime.world.get_stage('fed_benefits', task.id) == 'done'
+
+
+def test_unmapped_matters_cannot_send_to_an_unrelated_institution(runtime):
+    task = TaskItem(case_id=runtime.case.id, title='An unsupported provider', category='financial')
+    runtime.ledger.save_task(task)
+    submit = _tool(build_case_tools(runtime), 'submit_to_institution')
+    result = submit(task_id=task.id, institution_id='daily_ledger_news', subject='Request details',
+                    body='Please provide the account information.', attachments=['certified_death_certificate'])
+    assert 'Nothing was sent' in result
+    assert runtime.ledger.mail_for_case(runtime.case.id) == []
+    assert runtime.vault_status()['certified_death_certificate'] == 5
