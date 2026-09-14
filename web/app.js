@@ -243,6 +243,10 @@ function connectFeed() {
       feed.append(line);
       feed.scrollTop = feed.scrollHeight;
       if (e.kind === "status") $("intake-status").textContent = e.summary;
+      if (e.kind === "error") {
+        $("intake-status").textContent = e.summary + " — check the server logs, then try again.";
+        $("begin-btn").disabled = false;
+      }
     }
     if (e.kind === "case_ready") { refresh(); }
     if (["letter_sent", "mail_received", "decision_opened", "decision_resolved", "status", "note", "done", "clock"].includes(e.kind)) {
