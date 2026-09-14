@@ -5,7 +5,7 @@ Total hands-on time: ~60–90 minutes, most of it the video.
 
 ## 1. Repository (5 min)
 
-- [ ] Merge the `claude/quirky-knuth-4o6pqv` branch into `main` (a PR is open, or merge locally).
+- [ ] The working branch `claude/quirky-knuth-4o6pqv` is already the repo's **default branch**, so everything is live as-is. *(Optional tidy-up: Settings → Branches → rename it to `main`; GitHub updates the default automatically.)*
 - [ ] Make the repository **public** (Settings → General → Danger Zone → Change visibility).
 - [ ] Confirm GitHub shows **"MIT license"** in the About sidebar (it auto-detects `LICENSE`; give it a minute after going public).
 - [ ] Set the About description: *"Epilogue — the agent that settles what's left behind. Autonomous after-loss administration on Strands Agents + Amazon Bedrock."* Add topics: `strands-agents`, `aws`, `bedrock`, `ai-agents`, `hackathon`.

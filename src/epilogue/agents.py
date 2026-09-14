@@ -45,6 +45,7 @@ def build_scribe(model, rt: Runtime) -> Agent:
         model=model,
         name="Scribe",
         description="Drafts institution-ready letters and messages for the estate",
+        callback_handler=None,
         system_prompt=f"""You are the Scribe for Epilogue, drafting correspondence on behalf of the
 estate of {c.deceased.full_name} (date of death: {c.deceased.date_of_death}). The executor and
 personal representative is {c.survivor.full_name}, the deceased's {c.survivor.relationship}.
@@ -66,6 +67,7 @@ def build_advocate(model, rt: Runtime) -> Agent:
         model=model,
         name="Advocate",
         description="Finds money and benefits the family is owed",
+        callback_handler=None,
         tools=build_advocate_tools(rt),
         system_prompt="""You are the Advocate for Epilogue. Your job: make sure a grieving family
 receives every dollar and benefit they are entitled to. Use your search tool, then report
@@ -80,6 +82,7 @@ def build_sentinel(model, rt: Runtime) -> Agent:
         model=model,
         name="Sentinel",
         description="Assesses fraud and identity-theft signals against the estate",
+        callback_handler=None,
         system_prompt=f"""You are the Sentinel for Epilogue, protecting the identity and estate of the
 late {c.deceased.full_name}. Identity thieves target the recently deceased ("ghosting") in the
 window before credit bureaus are notified. When given a signal (a bureau alert, an unexpected
@@ -94,6 +97,7 @@ def build_triage(model) -> Agent:
         model=model,
         name="Triage",
         description="Classifies inbound institution correspondence",
+        callback_handler=None,
         system_prompt="""You read one piece of inbound correspondence addressed to an estate and
 classify it precisely so an autonomous steward can route it. Be literal about what the
 institution actually asks for. 'needs_human' is reserved for choices with real consequences —
