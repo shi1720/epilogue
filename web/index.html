@@ -1,0 +1,114 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Epilogue</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,400;9..144,500;9..144,600&family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="/static/style.css">
+<link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🕊️</text></svg>">
+</head>
+<body>
+
+<!-- ================= INTAKE ================= -->
+<section id="intake-view" hidden>
+  <div class="intake-wrap">
+    <div class="wordmark big">Epilogue</div>
+    <p class="tagline">The agent that settles what's left behind.</p>
+    <div class="intake-card">
+      <h1>We're so sorry.<br>Let us carry what we can.</h1>
+      <p class="intake-lead">
+        Tell us what happened, in your own words. Then share whatever papers you have —
+        statements, mail, notes. Epilogue will read everything, find every account and
+        obligation, and quietly begin. It will only come back to you when something truly
+        needs your voice.
+      </p>
+      <label class="field-label">In your own words</label>
+      <textarea id="narrative" rows="7" placeholder="My father passed away on…"></textarea>
+      <label class="field-label">The shoebox — statements, mail, notes (paste anything)</label>
+      <textarea id="documents" rows="9" placeholder="Paste bank statements, mail, notes…"></textarea>
+      <div class="intake-actions">
+        <button id="seed-btn" class="ghost">Use the demo case</button>
+        <button id="begin-btn" class="primary">Begin</button>
+      </div>
+    </div>
+    <div id="intake-progress" class="intake-progress" hidden>
+      <div class="pulse-line"><span class="pulse-dot"></span><span id="intake-status">Epilogue is reading what you shared…</span></div>
+      <div id="intake-feed" class="intake-feed"></div>
+    </div>
+  </div>
+</section>
+
+<!-- ================= DASHBOARD ================= -->
+<section id="dashboard-view" hidden>
+  <header class="topbar">
+    <div class="wordmark">Epilogue</div>
+    <div class="case-line" id="case-line"></div>
+    <div class="topbar-right">
+      <span id="busy-dot" class="status-dot idle" title="Epilogue's status"></span>
+      <span id="sim-date" class="sim-date"></span>
+    </div>
+  </header>
+
+  <main class="layout">
+    <div class="col-main">
+
+      <div class="hero">
+        <h1 id="hero-line"></h1>
+        <div class="stats-row" id="stats-row"></div>
+        <div class="progress-track"><div id="progress-fill" class="progress-fill"></div></div>
+      </div>
+
+      <section id="decisions-section" hidden>
+        <h2 class="section-title">Waiting on you</h2>
+        <p class="section-sub">Only what truly needs your voice. Everything else is being handled.</p>
+        <div id="decision-cards"></div>
+      </section>
+
+      <section id="note-section" hidden>
+        <h2 class="section-title">A note from Epilogue</h2>
+        <div class="weekly-note" id="weekly-note"></div>
+      </section>
+
+      <section>
+        <h2 class="section-title">Every matter, accounted for</h2>
+        <div id="matters"></div>
+      </section>
+    </div>
+
+    <aside class="col-side">
+      <section class="activity-panel">
+        <h3 class="side-title"><span id="activity-pulse" class="pulse-dot small" hidden></span> Right now</h3>
+        <div id="activity-feed" class="activity-feed"></div>
+      </section>
+      <section>
+        <h3 class="side-title">Handled quietly</h3>
+        <div id="timeline" class="timeline"></div>
+      </section>
+    </aside>
+  </main>
+
+  <div class="clock-widget">
+    <div class="clock-label">DEMO · the case clock</div>
+    <div class="clock-row">
+      <button class="clock-btn" data-days="1">+1 day</button>
+      <button class="clock-btn" data-days="3">+3 days</button>
+      <button class="clock-btn" data-days="7">+1 week</button>
+    </div>
+    <div class="clock-hint">Weeks of quiet work, compressed. In production this is a scheduler.</div>
+  </div>
+</section>
+
+<!-- ================= MAIL MODAL ================= -->
+<div id="modal" class="modal" hidden>
+  <div class="modal-card">
+    <button class="modal-close" id="modal-close">×</button>
+    <div class="letter" id="modal-body"></div>
+  </div>
+</div>
+
+<script src="/static/app.js"></script>
+</body>
+</html>

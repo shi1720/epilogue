@@ -1,0 +1,69 @@
+"""simworld: institution behaviors, delivery queue, ambient events."""
+
+from epilogue.simworld import SimWorld
+
+
+def _submit(world, case, task_id, inst, channel="secure_message", body="notice of death", attachments=None):
+    return world.submit(case.id, task_id, inst, channel, "Notice of death", body, attachments or [])
+
+
+def test_bank_demands_certified_documents_then_settles(ledger, case):
+    world = SimWorld(ledger)
+    receipt = _submit(world, case, "t1", "first_harbor_bank")
+    assert "First Harbor Bank" in receipt
+    # No mail yet — the reply is scheduled days out.
+    assert ledger.unread_mail(case.id) == []
+    ledger.advance_days(3)
+    delivered = world.deliver_due(case.id)
+    assert len(delivered) == 1
+    assert "certified" in delivered[0].body.lower()
+    # Second round with the certificate attached settles the matter.
+    _submit(world, case, "t1", "first_harbor_bank", attachments=["certified_death_certificate"])
+    ledger.advance_days(4)
+    delivered = world.deliver_due(case.id)
+    assert "date-of-death balance" in delivered[0].subject.lower()
+    assert world.get_stage("first_harbor_bank", "t1") == "done"
+
+
+def test_gym_swallows_portal_requests_but_honors_letters(ledger, case):
+    world = SimWorld(ledger)
+    receipt = _submit(world, case, "t2", "ironworks_gym", channel="portal_form")
+    assert "no confirmation" in receipt
+    ledger.advance_days(10)
+    assert world.deliver_due(case.id) == []  # silence — the follow-up loop must catch this
+    # A second portal attempt gets told the truth; a letter finally works.
+    _submit(world, case, "t2", "ironworks_gym", channel="portal_form")
+    ledger.advance_days(2)
+    told = world.deliver_due(case.id)
+    assert told and "WRITTEN NOTICE" in told[0].body
+    _submit(world, case, "t2", "ironworks_gym", channel="letter")
+    ledger.advance_days(3)
+    done = world.deliver_due(case.id)
+    assert done and "refund" in done[0].body.lower()
+
+
+def test_fraud_event_fires_on_schedule(ledger, case):
+    world = SimWorld(ledger)
+    world.seed_case_events(case.id)
+    assert world.deliver_due(case.id) == []
+    ledger.advance_days(9)
+    delivered = world.deliver_due(case.id)
+    subjects = " | ".join(m.subject for m in delivered)
+    assert "blocked" in subjects.lower()
+
+
+def test_renewal_reminder_suppressed_once_settled(ledger, case):
+    world = SimWorld(ledger)
+    world.seed_case_events(case.id)
+    # Settle PixelVault before the reminder is due.
+    _submit(world, case, "t3", "pixelvault", body="please export the archive")
+    world.set_stage("pixelvault", "t3", "done")
+    ledger.advance_days(8)
+    delivered = world.deliver_due(case.id)
+    assert all("renews" not in m.subject for m in delivered)
+
+
+def test_unknown_institution_is_reported_not_raised(ledger, case):
+    world = SimWorld(ledger)
+    out = _submit(world, case, "t4", "bank_of_narnia")
+    assert out.startswith("ERROR: unknown institution")

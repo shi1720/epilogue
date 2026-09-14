@@ -1,0 +1,30 @@
+# Python
+__pycache__/
+*.py[cod]
+*.egg-info/
+dist/
+build/
+.venv/
+venv/
+.pytest_cache/
+.ruff_cache/
+.coverage
+
+# Epilogue runtime data
+data/
+*.db
+*.sqlite3
+
+# Environment
+.env
+.env.*
+!.env.example
+
+# OS / editors
+.DS_Store
+.idea/
+.vscode/
+
+# AgentCore build output
+.bedrock_agentcore.yaml
+.bedrock_agentcore/
